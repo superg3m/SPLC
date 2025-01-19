@@ -1,0 +1,99 @@
+// Compiler directives (run at compiler time)
+#assert(condition, msg = "") (static assert)
+#typeof()
+#insert_if(condition)
+
+// Compiler requires code gen
+@Type
+<>
+
+struct Vector<int dim> {
+    #assert(dim >= 0);
+    #assert(dim <= 4);
+    union {
+        struct {
+            @insert_if(dim >= 1) double x;
+            @insert_if(dim >= 2) double y;
+            @insert_if(dim >= 3) double z;
+            @insert_if(dim == 4) double w; 
+        };
+
+        double data[dim];
+    }
+}
+
+typedef Vector<4> Vector4; (in the backend Vector<4> is just some type named like vector(4)_$#$2523523)
+
+Vector4 v = {5.0};
+
+Vector<4> vec;
+
+Vector<4> vec; // x, y, z, w
+Vector<3> vec; // x, y, z
+
+struct_interface Entity<Type T, int reserve = 1> {
+    #assert(reserve >= 1);
+    T* data;
+
+    void push(T element);
+    @no_self DynamicArray<T> create();
+}
+
+struct_impl DynamicArray<Type T, int reserve = 1> {
+    void push(T element) {
+
+    }
+
+    DynamicArray<T> create() {
+        self.data = malloc(reserve * sizeof(T))
+    }
+}
+
+// This is tough I might not do this right now
+void polymorphic_test(DynamicArray d1, DynamicArray d2) {
+    #assert(typeof(d1) == typeof(d2)) // DynamicArray<int> == DynamicArray<int> | 32 == 32
+
+
+}
+
+DynamicArray<String> test_dynamic_array = DynamicArray.create()
+test.push("Hello");
+
+int test[..];
+
+test.push()
+test.pop()
+test.insert()
+test.delete()
+
+struct_interface Person<$T> {
+    int age;
+    string name;
+    $T social_security;
+
+    Person create();
+    void changeName(string newName);
+    void birthday();
+
+    #assert(n <= 47);
+    #assert(@typeof($T) == @typeof(u32));
+}
+
+struct_impl Person<$T> {
+    Person create(int n, string name) {
+        self.age = n;
+        self.name = name;
+    }
+
+    void changeName(string newName) {
+        self.name = newName;
+    }
+
+    void birthday() {
+        self.age++;
+    }
+}
+
+int main() {
+    Person<u32> p = Person.create("John");
+}

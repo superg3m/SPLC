@@ -1,0 +1,8 @@
+<Expression>     ::= <Term> (<Add_Operation> <Term>)^*
+<Term>           ::= <Factor> (<Mult_Operation> <Factor>)^*
+<Factor>         ::= ('+' | '-') <Unary> | <Primary>
+<Primary>        ::= <Number> | '('<Expression>')'
+<Add_Operation>  ::= '+' | '-'
+<Mult_Operation> ::= '*' | '/'
+<Number>         ::= <Digit>^+
+<Digit>          ::= '0' | '1' | ... | '9'

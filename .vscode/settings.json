@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "ckit.h": "c",
+        "token.h": "c"
+    }
+}

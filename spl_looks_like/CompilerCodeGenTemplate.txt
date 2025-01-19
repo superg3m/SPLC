@@ -1,0 +1,157 @@
+// NOTES
+    - This is a template that I need to generate from SPL and then feed the source into a program that will
+        - Literally replace args like $T with what the value is
+        - Do all the code Gen annotations like @insert_if or @no_self
+        - Run static_if in struct, then methods generated with the struct
+        - report errors if any static_if triggers
+
+    - CONSTRAINTS
+        - You must use struct_interface and struct_impl if you want to use the generics
+        - struct_impl requires a struct_interface first
+
+
+    - DynamicArray is the case type and DynamicArray_$T is a derived type
+    - After code gen check all methods you just generated to see if they have #static_assert and run those
+
+// =======================================================
+// ===================== SPL_SOURCE ======================
+// =======================================================
+struct_interface DynamicArray<$T> {
+    u32 count
+    u32 capacity
+    $T* data
+
+    DynamicArray<$T> create();
+    void push($T element);
+    $T pop($T element);
+    void insert($T element, u32 index);
+    $T delete(u32 index);
+
+    @no_self $T* to_array(DynamicArray<$T> d1);
+};
+
+struct_impl DynamicArray<$T> {
+    DynamicArray<$T> create() {
+        DynamicArray<$T> ret;
+        ret.count = 0;
+        ret.capacity = 0;
+        ret.data = malloc(sizeof($T) * 2);
+        ret.count = 0;
+
+        return ret;
+    }
+
+    void push(DynamicArray<$T> element) {
+        self.data[self.count++] = element;
+        ... // Reallocate grow stuff like that
+    }
+
+    $T pop(DynamicArray<$T> element) {
+        assert(self.count > 0);
+        return self.data[count--];
+    }
+
+    void insert(DynamicArray<$T> element, u32 index) {
+        ...
+    }
+
+    $T delete(u32 index) {
+        ...
+    }
+
+    $T* to_array(DynamicArray<$T>* d1) { // @no_self
+        #assert(@typeof(d1) == @typeof(DynamicArray<int>*)) // DynamicArray<int>* == DynamicArray<int>*
+    }
+};
+
+// =======================================================
+// ==================== SPL_TEMPLATE =====================
+// =======================================================
+[DynamicArray]($T)
+typedef struct DynamicArray_$T {
+    u32 count
+    u32 capacity
+    $T* data
+} DynamicArray_$T;
+
+DynamicArray_$T create() {
+    DynamicArray_$T ret;
+    ret.count = 0;
+    ret.capacity = 0;
+    ret.data = malloc(sizeof($T) * 2);
+    ret.count = 0;
+
+    return ret;
+}
+
+void push(DynamicArray_$T* self, $T element) {
+    self.data[self.count++] = element;
+    ... // Reallocate grow stuff like that
+}
+
+$T pop(DynamicArray_$T* self, $T element) {
+    assert(self.count > 0);
+    return self.data[count--];
+}
+
+void insert(DynamicArray_$T* self, $T element, u32 index) {
+    ...
+}
+
+$T delete(DynamicArray_$T* self, u32 index) {
+    ...
+}
+
+$T* to_array(DynamicArray_$T* d1) {
+
+}
+
+// =======================================================
+// ====================== C_CodeGen ======================
+// =======================================================
+Variable Declaration: int[..] x;
+
+typedef struct DynamicArray_int {
+    u32 count
+    u32 capacity
+    int* data
+
+    // DynamicArray_int create(DynamicArray_int* self, );
+    // void push(DynamicArray_int* self, int element);
+    // int pop(DynamicArray_int* self, int element);
+    // void insert(DynamicArray_int* self, int element, u32 index);
+    // int delete(DynamicArray_int* self, u32 index);
+    // int* to_array(DynamicArray* d1);
+} DynamicArray_int;
+
+DynamicArray_int create() {
+    DynamicArray_int ret;
+    ret.count = 0;
+    ret.capacity = 0;
+    ret.data = malloc(sizeof(int) * 2);
+    ret.count = 0;
+
+    return ret;
+}
+
+void push(DynamicArray_int* self, $T element) {
+    self.data[self.count++] = element;
+    ... // Reallocate grow stuff like that
+}
+
+int pop(DynamicArray_int* self, $T element) {
+    assert(self.count > 0);
+    return self.data[count--];
+}
+
+void insert(DynamicArray_int* self, $T element, u32 index) {
+    ...
+}
+
+int delete(DynamicArray_int* self, u32 index) {
+    ...
+}
+
+int* to_array(DynamicArray_int* d1) {
+    ...
+}

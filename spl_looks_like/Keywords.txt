@@ -1,0 +1,18 @@
+// ==================== Keywords ====================
+STRUCT
+STRUCT_INTERFACE
+STRUCT_IMPL
+UNION
+
+STATIC
+IF
+ELSE
+FOR
+WHILE
+
+TRUE
+FALSE
+NULL
+RETURN
+
+EOF

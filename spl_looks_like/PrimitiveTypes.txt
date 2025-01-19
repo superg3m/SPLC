@@ -1,0 +1,30 @@
+// Types and default initialization
+VECTOR2 = {0}
+VECTOR3 = {0}
+VECTOR4 = {0}
+
+MAT2 = {0}
+MAT3 = {0}
+MAT4 = {0}
+
+VOID
+BOOL = false
+INT  = 0
+CHAR = '\0'
+U8   = 0
+U16  = 0
+U32  = 0
+U64  = 0
+
+S8  = 0
+S16 = 0
+S32 = 0
+S64 = 0
+
+FLOAT = 0.0
+DOUBLE = 0.0
+
+DYNAMIC_ARRAY = {} // int x[..] this will be a struct in c | initialization depends on derived type (int in this case)
+STRING = "" // this will be a struct in c
+
+STRUCT_TYPE = (recursively zero out all members until you get to all the primitives)

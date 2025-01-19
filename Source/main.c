@@ -1,0 +1,28 @@
+#include <ckit.h>
+#include <lexer.h>
+#include <token.h>
+
+int main(int argc, char** argv) {
+    ckit_init();
+
+    if (argc < 2) {
+        LOG_ERROR("Usage: splc.exe <filename> \n");
+        return -1;
+    }
+
+    char* file_path = argv[1];
+
+    if (!ckit_os_path_exists(file_path)) {
+        LOG_DEBUG("%s\n", ckit_os_get_cwd());
+        LOG_ERROR("File name is not a valid path: %s\n", file_path);
+        return -1;
+    }
+
+    // lexical analysis
+    Lexer lexer = lexer_create(); // later on I should make an arena version of this where it can just accept a arena allocator
+    Token* token_stream = lexer_generate_token_stream(&lexer, file_path);
+
+    // parse
+
+    ckit_cleanup();
+}
