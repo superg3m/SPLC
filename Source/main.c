@@ -1,6 +1,7 @@
 #include <ckit.h>
 #include <lexer.h>
 #include <token.h>
+#include <ast.h>
 
 int main(int argc, char** argv) {
     ckit_init();
@@ -21,14 +22,22 @@ int main(int argc, char** argv) {
     // lexical analysis
     Lexer lexer = lexerCreate(); // later on I should make an arena version of this where it can just accept a arena allocator
     SPL_Token* token_stream = lexerGenerateTokenStream(&lexer, file_path);
+    LOG_PRINT("\n");
+    LOG_SUCCESS("------------ LEXICAL ANALYSIS ------------\n");
+
     for (int i = 0; i < ckit_vector_count(token_stream); i++ ) {
         SPL_Token token = token_stream[i];
         LOG_PRINT("%s(%s) | Line: %d\n", tokenTypeToString(token.type), token.lexeme, token.line);
     }
-
     lexerFree(&lexer);
 
     // parse
+    LOG_PRINT("\n");
+    LOG_SUCCESS("------------ PARSING ------------\n");
+    // parserCreate();
+    // AST ast = generateAST();
+    // print_ast(ast);
 
+    ckit_vector_free(token_stream);
     ckit_cleanup();
 }
