@@ -1,26 +1,20 @@
-#pragma once
-#include <token.h>
-#include <ast.h>
+#include <spl_parser.h>
 
-typedef struct Parser {
-    SPL_Token* tokens;
-    int current;
-    SPL_Token tok;
-} Parser;
-
-Parser createParser() {
+Parser parserCreate() {
     Parser ret;
     ret.tokens = NULLPTR;
     ret.current = 0;
     ret.tok;
+
+    return ret;
 }
 
-void consumeNextToken(Parser* parser) {
+internal void consumeNextToken(Parser* parser) {
     parser->tok = parser->tokens[parser->current];
     parser->current += 1;
 }
 
-SPL_Token peekNthToken(Parser* parser, int n) {
+internal SPL_Token peekNthToken(Parser* parser, int n) {
     return parser->tokens[parser->current + n];
 }
 
@@ -30,14 +24,14 @@ internal void reportError(Parser* parser, char* msg) {
     ckit_assert(FALSE);
 }
 
-void expect(Parser* parser, SPL_TokenType expected_type) {
+internal void expect(Parser* parser, SPL_TokenType expected_type) {
     if (peekNthToken(parser, 0).type != expected_type) {
         LOG_ERROR("Expected: %s | Got: %s", tokenTypeToString(expected_type), peekNthToken(parser, 0).lexeme);
         reportError(parser, "\n");
     }
 }
 
-Boolean consumeOnMatch(Parser* parser, SPL_TokenType expected_type) {
+internal Boolean consumeOnMatch(Parser* parser, SPL_TokenType expected_type) {
     if (peekNthToken(parser, 0).type == expected_type) {
         consumeNextToken(parser);
         return TRUE;
@@ -46,30 +40,44 @@ Boolean consumeOnMatch(Parser* parser, SPL_TokenType expected_type) {
     return FALSE;
 }
 
-SPL_Token previousToken(Parser* parser) {
+internal SPL_Token previousToken(Parser* parser) {
     return parser->tokens[parser->current - 1];
 }
 
 // <primary>  ::=  <integer> | <float> | '(' <expr> ')'
-AST primary(Parser* parser) {
+internal Expression* parsePrimary(Parser* parser) {
     if (consumeOnMatch(parser, SPL_TOKEN_INTEGER_LITERAL)) { 
         int num = atoi(previousToken(parser).lexeme);
-        return astPrimaryIntegerCreate(num);
+        return expressionPrimaryIntegerCreate(num);
     } else if (consumeOnMatch(parser, SPL_TOKEN_FLOAT_LITERAL)) {
         float num = atof(previousToken(parser).lexeme);
-        return astPrimaryFloatCreate(num);
+        return expressionPrimaryFloatCreate(num);
     } else if (consumeOnMatch(parser, SPL_TOKEN_LEFT_PAREN)) {
-        AST expression = expression();
+        /*
+        Expression* expression = parseExpression();
         if (!consumeOnMatch(parser, SPL_TOKEN_RIGHT_PAREN)) {
             reportError(parser, "Error: ')' expected");
         } else  {
             return astGroupingCreate(expression);
         }
+        */
     }
 
+    return NULLPTR;
 }
 
-Expression binaryOperation(char op, Expression* left, Expression* right) {
+internal Expression* parseTerm(Parser* parser) {
+    /*
+        expr = self.factor()
+        while self.consumeOnMatch(TokenType.STAR) or self.consumeOnMatch(TokenType.DIVISION):
+            op = self.previousToken()
+            right = self.factor()
+            expr = BinaryOperation(expr, op, right)
+        return expr
+    */
+}
+
+internal Expression* binaryOperation(char op, Expression* left, Expression* right) {
     switch (op) {
         case '+':
         case '-': {
@@ -83,30 +91,36 @@ Expression binaryOperation(char op, Expression* left, Expression* right) {
     }
 }
 
+internal Expression* parseExpression(Parser* parser) {
+    // Expression* expr = parseTerm();
 
-AST parseExpression(Parser* parser) {
-    Expression expr = parseTerm();
 
+    Expression* expr = parsePrimary(parser);
+
+    /*
     while (consumeOnMatch(parser, SPL_TOKEN_PLUS) || consumeOnMatch(parser, SPL_TOKEN_MINUS)) {
         Expression op = previousToken(parser);
         Expression right = parseTerm(parser);
 
         expr = binaryOperation(expr, op, right);
     }
+    */
 
     return expr;
 }
 
-AST* generateAST(Parser* parser, SPL_Token* tokens) {
+Expression* generateAST(Parser* parser, SPL_Token* tokens) {
     parser->current = 0;
     parser->tokens = tokens;
     parser->tok = parser->tokens[parser->current];
 
+    Expression* ast = parseExpression(parser);
 
-    AST* ast = NULLPTR;
+    /*
     while (parser->current < (ckit_vector_count(parser->tokens) - 1)) {
         ckit_vector_push(ast, parseExpression(parser))
     }
+    */
 
-    return ast
+    return ast;
 }

@@ -1,7 +1,7 @@
 #include <ckit.h>
 #include <lexer.h>
 #include <token.h>
-#include <ast.h>
+#include <spl_parser.h>
 
 int main(int argc, char** argv) {
     ckit_init();
@@ -34,10 +34,19 @@ int main(int argc, char** argv) {
     // parse
     LOG_PRINT("\n");
     LOG_SUCCESS("------------ PARSING ------------\n");
-    // parserCreate();
-    // AST ast = generateAST();
+    Parser parser = parserCreate();
+    Expression* ast = generateAST(&parser, token_stream);
+    if (ast) {
+        if (ast->primary.PrimaryType == PRIMARY_INTEGER) {
+            LOG_DEBUG("Integer: %d\n", ast->primary.integer_num);
+        } else {
+            LOG_DEBUG("Float: %f\n", ast->primary.float_num);
+        }
+    }
+
     // print_ast(ast);
 
+    ckit_free(ast);
     ckit_vector_free(token_stream);
     ckit_cleanup();
 }
