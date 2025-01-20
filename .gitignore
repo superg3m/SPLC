@@ -31,4 +31,11 @@
 *.out
 *.app
 
+*.ilk
+*.rdi
+*.pdb
+
+build_*/
 c_build/
+ckit/
+.vscode/

@@ -11,8 +11,15 @@ typedef struct Lexer {
     u8* source;
     u64 source_size;
 
-    Token* tokens;
+    CKIT_HashMap* syntaxTable;
+    CKIT_HashMap* keywordTable;
+    CKIT_HashSet* directiveTable;
+    CKIT_HashSet* codeGenTable;
+    CKIT_HashSet* primitiveTable;
+
+    SPL_Token* tokens;
 } Lexer;
 
-Lexer lexer_create();
-Token* lexer_generate_token_stream(Lexer* lexer, char* file_path);
+Lexer lexerCreate();
+void lexerFree(Lexer* lexer);
+SPL_Token* lexerGenerateTokenStream(Lexer* lexer, char* file_path);

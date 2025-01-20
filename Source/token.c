@@ -69,6 +69,15 @@ internal const char* lookup_table[SPL_TOKEN_COUNT] = {
     stringify(SPL_TOKEN_RETURN),
 };
 
-const char* token_to_string(SPL_TokenType type) {
+const char* tokenTypeToString(SPL_TokenType type) {
     return lookup_table[type];
+}
+
+const SPL_Token tokenCreate(SPL_TokenType type, char* lexeme, u64 line) {
+    SPL_Token ret = {0};
+    ret.lexeme = lexeme;
+    ret.type = type;
+    ret.line = line;
+
+    return ret;
 }

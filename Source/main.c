@@ -19,8 +19,9 @@ int main(int argc, char** argv) {
     }
 
     // lexical analysis
-    Lexer lexer = lexer_create(); // later on I should make an arena version of this where it can just accept a arena allocator
-    Token* token_stream = lexer_generate_token_stream(&lexer, file_path);
+    Lexer lexer = lexerCreate(); // later on I should make an arena version of this where it can just accept a arena allocator
+    SPL_Token* token_stream = lexerGenerateTokenStream(&lexer, file_path);
+    lexerFree(&lexer);
 
     // parse
 

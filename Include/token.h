@@ -67,13 +67,15 @@ typedef enum SPL_TokenType {
     SPL_TOKEN_TRUE,                       // true
     SPL_TOKEN_FALSE,                      // false
     SPL_TOKEN_NULL,                       // null
-    SPL_TOKEN_RETURN,                      // return
+    SPL_TOKEN_RETURN,                     // return
     SPL_TOKEN_COUNT
 } SPL_TokenType;
 
-typedef struct Token {
+typedef struct SPL_Token {
     char *lexeme;
     SPL_TokenType type;
-} Token;
+    u64 line;
+} SPL_Token;
 
-const char* token_to_string(SPL_TokenType type);
+const SPL_Token tokenCreate(SPL_TokenType type, char* lexeme, u64 line);
+const char* tokenTypeToString(SPL_TokenType type);
