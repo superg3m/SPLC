@@ -1,7 +1,7 @@
 #include <lexer.h>
 #include <utils.h>
 
-void lexerInitalizeSyntaxTable(Lexer* lexer) {
+internal void lexerInitalizeSyntaxTable(Lexer* lexer) {
     internal char* syntaxLookup[] = { 
         "!", "$", "&", "(", ")",
         "*", "+", ",", "-", ".", "/", ";",
@@ -36,7 +36,7 @@ void lexerInitalizeSyntaxTable(Lexer* lexer) {
     }
 }
 
-void lexerInitalizeKeywordTable(Lexer* lexer) {
+internal void lexerInitalizeKeywordTable(Lexer* lexer) {
      internal SPL_TokenType keywordTokenTable[] = {
         SPL_TOKEN_STRUCT, SPL_TOKEN_STRUCT_INTERFACE, SPL_TOKEN_STRUCT_IMPL,
         SPL_TOKEN_UNION, SPL_TOKEN_STATIC, SPL_TOKEN_EXTERN, SPL_TOKEN_DEFER,
@@ -56,7 +56,7 @@ void lexerInitalizeKeywordTable(Lexer* lexer) {
     }
 }
 
-void lexerInitalizeDirectivesTable(Lexer* lexer) {
+internal void lexerInitalizeDirectivesTable(Lexer* lexer) {
     char* directives[] = {
         "#include", "#if", "#elif",
         "#endif", "#ifdef", "#ifndef",
@@ -68,7 +68,7 @@ void lexerInitalizeDirectivesTable(Lexer* lexer) {
     }
 }
 
-void lexerInitalizeCodeGenTable(Lexer* lexer) {
+internal void lexerInitalizeCodeGenTable(Lexer* lexer) {
     char* codeGen[] = {
         "@typeof", "@insert_if", "@global"
     };
@@ -78,7 +78,7 @@ void lexerInitalizeCodeGenTable(Lexer* lexer) {
     }
 }
 
-void lexerInitalizePrimitivesTable(Lexer* lexer) {
+internal void lexerInitalizePrimitivesTable(Lexer* lexer) {
     char* primitives[] = {
         "void", "bool","int", "char", "string",
         "u8", "u16", "u32", "u64", "s8", "s16",
@@ -91,7 +91,7 @@ void lexerInitalizePrimitivesTable(Lexer* lexer) {
 }
 
 
-void lexerInitalizeTables(Lexer* lexer) {
+internal void lexerInitalizeTables(Lexer* lexer) {
     lexerInitalizeSyntaxTable(lexer);
     lexerInitalizeKeywordTable(lexer);
     lexerInitalizeDirectivesTable(lexer);
@@ -191,7 +191,7 @@ internal consumeNextChar(Lexer* lexer) {
     lexer->right_pos += 1;
 }
 
-Boolean consumeOnMatch(Lexer* lexer, char expected) {
+internal Boolean consumeOnMatch(Lexer* lexer, char expected) {
     if (peekNthChar(lexer, 0) != expected) {
         return FALSE;
     }
@@ -275,13 +275,13 @@ internal Boolean consumeWhitespace(Lexer* lexer) {
     return TRUE;
 }
 
-void reportError(Lexer* lexer, char* msg) {
+internal void reportError(Lexer* lexer, char* msg) {
     LOG_ERROR("Lexical Error: %s | Line: %d\n", getScratchBuffer(lexer), lexer->line);
     LOG_ERROR("Msg: %s\n", msg);
     ckit_assert(FALSE);
 }
 
-Boolean tryConsumeWord(Lexer* lexer) {
+internal Boolean tryConsumeWord(Lexer* lexer) {
     if (!ckit_char_is_alpha(lexer->c)) {
        return FALSE;
     }
@@ -299,7 +299,7 @@ Boolean tryConsumeWord(Lexer* lexer) {
 }
 
 
-Boolean consumeDirective(Lexer* lexer) {
+internal Boolean consumeDirective(Lexer* lexer) {
     if (lexer->c != '#') {
         return FALSE;
     }
@@ -321,7 +321,7 @@ Boolean consumeDirective(Lexer* lexer) {
     return FALSE;
 }
 
-Boolean consumeCodeGen(Lexer* lexer) {
+internal Boolean consumeCodeGen(Lexer* lexer) {
     if (lexer->c != '@') {
         return FALSE;
     }
@@ -343,7 +343,7 @@ Boolean consumeCodeGen(Lexer* lexer) {
     return FALSE;
 }
 
-void tryConsumeStringLiteral(Lexer* lexer) {
+internal void tryConsumeStringLiteral(Lexer* lexer) {
     while (peekNthChar(lexer, 0) != '\"') {
         if (isEOF(lexer)) {
             reportError(lexer, "String literal doesn't have a closing double quote!");
@@ -357,7 +357,7 @@ void tryConsumeStringLiteral(Lexer* lexer) {
 }
 
 
-void tryConsumeCharacterLiteral(Lexer* lexer) {
+internal void tryConsumeCharacterLiteral(Lexer* lexer) {
     if (consumeOnMatch(lexer, '\'')) {
         reportError(lexer, "character literal doesn't have any ascii data in between");
     }
@@ -376,7 +376,7 @@ void tryConsumeCharacterLiteral(Lexer* lexer) {
 }
 
 
-void tryConsumeDigitLiteral(Lexer* lexer) {
+internal void tryConsumeDigitLiteral(Lexer* lexer) {
     SPL_TokenType kind = SPL_TOKEN_INTEGER_LITERAL;
 
     while (ckit_char_is_digit(peekNthChar(lexer, 0)) || peekNthChar(lexer, 0) == '.') {
@@ -391,7 +391,7 @@ void tryConsumeDigitLiteral(Lexer* lexer) {
 }
 
 
-Boolean consumeLiteral(Lexer* lexer) {
+internal Boolean consumeLiteral(Lexer* lexer) {
     if (ckit_char_is_digit(lexer->c)) {
         tryConsumeDigitLiteral(lexer);
         return TRUE;
@@ -406,7 +406,7 @@ Boolean consumeLiteral(Lexer* lexer) {
     }
 }
 
-Boolean consumeIdentifier(Lexer* lexer) {
+internal Boolean consumeIdentifier(Lexer* lexer) {
     if (!tryConsumeWord(lexer)) {
         return FALSE;
     }
@@ -427,8 +427,6 @@ Boolean consumeIdentifier(Lexer* lexer) {
     return TRUE;
 }
 
-
-
 internal void consumeNextToken(Lexer* lexer) {
     lexer->left_pos = lexer->right_pos;
     consumeNextChar(lexer);
@@ -443,7 +441,6 @@ internal void consumeNextToken(Lexer* lexer) {
         reportError(lexer, "Illegal token found");
     }
 }
-
 
 SPL_Token* lexerGenerateTokenStream(Lexer* lexer, char* file_path) {
     u64 file_size = 0;
