@@ -21,6 +21,11 @@ int main(int argc, char** argv) {
     // lexical analysis
     Lexer lexer = lexerCreate(); // later on I should make an arena version of this where it can just accept a arena allocator
     SPL_Token* token_stream = lexerGenerateTokenStream(&lexer, file_path);
+    for (int i = 0; i < ckit_vector_count(token_stream); i++ ) {
+        SPL_Token token = token_stream[i];
+        LOG_PRINT("%s(%s) | Line: %d\n", tokenTypeToString(token.type), token.lexeme, token.line);
+    }
+
     lexerFree(&lexer);
 
     // parse

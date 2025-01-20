@@ -1,4 +1,5 @@
 #include <lexer.h>
+#include <utils.h>
 
 void lexerInitalizeSyntaxTable(Lexer* lexer) {
     internal char* syntaxLookup[] = { 
@@ -137,8 +138,12 @@ internal void lexerReset(Lexer* lexer) {
     lexer->source_size = 0;
 }
 
-internal SPL_TokenType getAcceptedSyntax(Lexer* lexer, char* buffer) {
-    SPL_TokenType* ret = ckit_hashmap_get(lexer->syntaxTable, buffer);
+internal String getScratchBuffer(Lexer* lexer) {
+    return ckit_substring(lexer->source, lexer->left_pos, lexer->right_pos - 1);
+}
+
+internal SPL_TokenType getAcceptedSyntax(Lexer* lexer) {
+    SPL_TokenType* ret = (SPL_TokenType*)ckit_hashmap_get(lexer->syntaxTable, getScratchBuffer(lexer));
 
     if (ret) {
         return *ret;
@@ -147,11 +152,29 @@ internal SPL_TokenType getAcceptedSyntax(Lexer* lexer, char* buffer) {
     return SPL_TOKEN_ILLEGAL_TOKEN;
 }
 
-internal String getScratchBuffer(Lexer* lexer) {
-    return ckit_substring(lexer->source, lexer->left_pos, lexer->right_pos);
+internal Boolean isAcceptedDirective(Lexer* lexer) {
+    return ckit_hashset_has(lexer->directiveTable, getScratchBuffer(lexer));
 }
 
-internal Boolean lexerIsEOF(Lexer* lexer) {
+internal Boolean isAcceptedCodeGen(Lexer* lexer) {
+    return ckit_hashset_has(lexer->codeGenTable, getScratchBuffer(lexer));
+}
+
+internal Boolean isAcceptedPrimitive(Lexer* lexer) {
+    return ckit_hashset_has(lexer->primitiveTable, getScratchBuffer(lexer));
+}
+
+internal SPL_TokenType getAcceptedKeyword(Lexer* lexer) {
+    SPL_TokenType* ret = (SPL_TokenType*)ckit_hashmap_get(lexer->keywordTable, getScratchBuffer(lexer));
+
+    if (ret) {
+        return *ret;
+    }
+
+    return SPL_TOKEN_ILLEGAL_TOKEN;
+}
+
+internal Boolean isEOF(Lexer* lexer) {
     return lexer->right_pos >= lexer->source_size;
 }
 
@@ -178,7 +201,7 @@ Boolean consumeOnMatch(Lexer* lexer, char expected) {
 }
 
 internal void consumeUntilNewLine(Lexer* lexer) {
-    while (!lexerIsEOF(lexer) && peekNthChar(lexer, 0) != '\n') {
+    while (!isEOF(lexer) && peekNthChar(lexer, 0) != '\r') {
         consumeNextChar(lexer);
     }
 }
@@ -231,8 +254,7 @@ internal Boolean consumeSyntax(Lexer* lexer) {
         } break;
     }
 
-    String buffer = getScratchBuffer(lexer);
-    SPL_TokenType type = getAcceptedSyntax(lexer, buffer);
+    SPL_TokenType type = getAcceptedSyntax(lexer);
     if (type != SPL_TOKEN_ILLEGAL_TOKEN) {
         addToken(lexer, type);
         return TRUE;
@@ -241,22 +263,182 @@ internal Boolean consumeSyntax(Lexer* lexer) {
     return FALSE;
 }
 
+internal Boolean consumeWhitespace(Lexer* lexer) {
+    if (!isWhitespace(lexer->c)) {
+        return FALSE;
+    }
+
+    if (lexer->c == '\n') {
+        lexer->line += 1;
+    }
+
+    return TRUE;
+}
+
 void reportError(Lexer* lexer, char* msg) {
-    LOG_ERROR("Lexical Error:", getScratchBuffer(lexer));
-    LOG_ERROR("Error Line: %d | %s", lexer->line, msg);
+    LOG_ERROR("Lexical Error: %s | Line: %d\n", getScratchBuffer(lexer), lexer->line);
+    LOG_ERROR("Msg: %s\n", msg);
     ckit_assert(FALSE);
 }
+
+Boolean tryConsumeWord(Lexer* lexer) {
+    if (!ckit_char_is_alpha(lexer->c)) {
+       return FALSE;
+    }
+ 
+
+    while (ckit_char_is_alpha_numeric(peekNthChar(lexer, 0)) || peekNthChar(lexer, 0) == '_') {
+        if (isEOF(lexer)) {
+            break;
+        }
+
+        consumeNextChar(lexer);
+    }
+
+    return TRUE;
+}
+
+
+Boolean consumeDirective(Lexer* lexer) {
+    if (lexer->c != '#') {
+        return FALSE;
+    }
+
+    consumeNextChar(lexer);
+    Boolean should_consume = tryConsumeWord(lexer);
+    if (!should_consume) {
+        reportError(lexer, "Not well formed directive");
+        return FALSE;
+    }
+
+    Boolean exists = isAcceptedDirective(lexer);
+    if (exists) {
+        addToken(lexer, SPL_TOKEN_DIRECTIVE);
+        return TRUE;
+    }
+
+    reportError(lexer, "Unknown directive");
+    return FALSE;
+}
+
+Boolean consumeCodeGen(Lexer* lexer) {
+    if (lexer->c != '@') {
+        return FALSE;
+    }
+
+    consumeNextChar(lexer);
+    Boolean should_consume = tryConsumeWord(lexer);
+    if (!should_consume) {
+        reportError(lexer, "Not well formed CodeGen");
+        return FALSE;
+    }
+
+    Boolean exists = isAcceptedCodeGen(lexer);
+    if (exists) {
+        addToken(lexer, SPL_TOKEN_CODE_GEN);
+        return TRUE;
+    }
+
+    reportError(lexer, "Unknown CodeGen");
+    return FALSE;
+}
+
+void tryConsumeStringLiteral(Lexer* lexer) {
+    while (peekNthChar(lexer, 0) != '\"') {
+        if (isEOF(lexer)) {
+            reportError(lexer, "String literal doesn't have a closing double quote!");
+        }
+
+        consumeNextChar(lexer);
+    }
+
+    consumeNextChar(lexer);
+    addToken(lexer, SPL_TOKEN_STRING_LITERAL);
+}
+
+
+void tryConsumeCharacterLiteral(Lexer* lexer) {
+    if (consumeOnMatch(lexer, '\'')) {
+        reportError(lexer, "character literal doesn't have any ascii data in between");
+    }
+
+
+    while (peekNthChar(lexer, 0) != '\'') {
+        if (isEOF(lexer)) {
+            reportError(lexer, "character literal doesn't have a closing quote!");
+        }
+
+        consumeNextChar(lexer);
+    }
+
+    consumeNextChar(lexer);
+    addToken(lexer, SPL_TOKEN_CHARACTER_LITERAL);
+}
+
+
+void tryConsumeDigitLiteral(Lexer* lexer) {
+    SPL_TokenType kind = SPL_TOKEN_INTEGER_LITERAL;
+
+    while (ckit_char_is_digit(peekNthChar(lexer, 0)) || peekNthChar(lexer, 0) == '.') {
+        if (lexer->c == '.') {
+            kind = SPL_TOKEN_FLOAT_LITERAL;
+        }
+
+        consumeNextChar(lexer);
+    }
+
+    addToken(lexer, kind);
+}
+
+
+Boolean consumeLiteral(Lexer* lexer) {
+    if (ckit_char_is_digit(lexer->c)) {
+        tryConsumeDigitLiteral(lexer);
+        return TRUE;
+    } else if (lexer->c == '\"') {
+        tryConsumeStringLiteral(lexer);
+        return TRUE;
+    } else if (lexer->c == '\'') {
+        tryConsumeCharacterLiteral(lexer);
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+Boolean consumeIdentifier(Lexer* lexer) {
+    if (!tryConsumeWord(lexer)) {
+        return FALSE;
+    }
+
+    Boolean exists = isAcceptedPrimitive(lexer);
+    if (exists) {
+        addToken(lexer, SPL_TOKEN_PRIMITIVE_TYPE);
+        return TRUE;
+    }
+
+    SPL_TokenType token_type = getAcceptedKeyword(lexer);
+    if (token_type != SPL_TOKEN_ILLEGAL_TOKEN) {
+        addToken(lexer, token_type);
+        return TRUE;
+    }
+
+    addToken(lexer, SPL_TOKEN_IDENTIFIER);
+    return TRUE;
+}
+
 
 
 internal void consumeNextToken(Lexer* lexer) {
     lexer->left_pos = lexer->right_pos;
     consumeNextChar(lexer);
 
-    if (consumeSyntax(lexer)) {}
-    // else if (consumeSyntax(lexer)) {}
-    // else if (consumeSyntax(lexer)) {}
-    // else if (consumeSyntax(lexer)) {}
-    // else if (consumeSyntax(lexer)) {}
+    if (consumeWhitespace(lexer)) {}
+    else if (consumeDirective(lexer)) {}
+    else if (consumeCodeGen(lexer)) {}
+    else if (consumeLiteral(lexer)) {}
+    else if (consumeIdentifier(lexer)) {}
+    else if (consumeSyntax(lexer)) {}
     else {
         reportError(lexer, "Illegal token found");
     }
@@ -270,13 +452,12 @@ SPL_Token* lexerGenerateTokenStream(Lexer* lexer, char* file_path) {
     lexer->source = source_data;
     lexer->source_size = file_size;
 
-    consumeNextToken(lexer);
-    LOG_SUCCESS("%s(%s)\n", tokenTypeToString(lexer->tokens[0].type), lexer->tokens[0].lexeme);
-    /*
-    while (!lexer_isEOF(lexer)) {
-        
+    
+    while (!isEOF(lexer)) {
+        consumeNextToken(lexer);
     }
-    */
+
+    ckit_vector_push(lexer->tokens, tokenCreate(SPL_TOKEN_EOF, "", lexer->line));
     ckit_free(source_data);
-    return NULLPTR;
+    return lexer->tokens;
 }
