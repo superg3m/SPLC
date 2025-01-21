@@ -15,7 +15,7 @@ project_name = "splc"
 project_dependencies = ["ckit"]
 project_rebuild_project_dependencies = False
 project_debug_with_visual_studio = False
-project_executable_procedures = ["splc.exe \"../SPL_Related/test.spl\""]
+project_executable_procedures = ["splc.exe ../SPL_Related/test.spl"]
 
 if compiler_name == "cl":
     project_warning_level = "2"

@@ -5,6 +5,7 @@ Parser parserCreate() {
     ret.tokens = NULLPTR;
     ret.current = 0;
     ret.tok;
+    // ret.arena_allocator = ckit_arena_create(KiloBytes(2), "Parser Allocator");
 
     return ret;
 }
@@ -44,7 +45,7 @@ internal SPL_Token previousToken(Parser* parser) {
     return parser->tokens[parser->current - 1];
 }
 
-// <primary>  ::=  <integer> | <float> | '(' <expr> ')'
+// <Primary>    ::= <integer> | <float> | '(' <Expression> ')'
 internal Expression* parsePrimary(Parser* parser) {
     if (consumeOnMatch(parser, SPL_TOKEN_INTEGER_LITERAL)) { 
         int num = atoi(previousToken(parser).lexeme);
@@ -58,7 +59,7 @@ internal Expression* parsePrimary(Parser* parser) {
         if (!consumeOnMatch(parser, SPL_TOKEN_RIGHT_PAREN)) {
             reportError(parser, "Error: ')' expected");
         } else  {
-            return astGroupingCreate(expression);
+            return expressionGroupingCreate(expression);
         }
         */
     }
@@ -66,19 +67,21 @@ internal Expression* parsePrimary(Parser* parser) {
     return NULLPTR;
 }
 
-internal Expression* parseTerm(Parser* parser) {
-    /*
-        expr = self.factor()
-        while self.consumeOnMatch(TokenType.STAR) or self.consumeOnMatch(TokenType.DIVISION):
-            op = self.previousToken()
-            right = self.factor()
-            expr = BinaryOperation(expr, op, right)
-        return expr
-    */
+
+// <Unary>      ::= ('+'|'-'|'!') <Primary> | <Primary>
+Expression* parseUnary(Parser* parser) {
+    if (consumeOnMatch(parser, SPL_TOKEN_NOT) || consumeOnMatch(parser, SPL_TOKEN_MINUS) || consumeOnMatch(parser, SPL_TOKEN_PLUS)) {
+        SPL_Token op = previousToken(parser);
+        Expression* operand = parsePrimary(parser);
+        return expressionUnaryCreate(op, operand);
+    }
+
+    return parsePrimary(parser);
 }
 
-internal Expression* binaryOperation(char op, Expression* left, Expression* right) {
-    switch (op) {
+internal Expression* binaryOperation(Parser* parser, SPL_Token op, Expression* left, Expression* right) {
+    char operation = op.lexeme[0];
+    switch (operation) {
         case '+':
         case '-': {
             return expressionTermCreate(op, left, right);
@@ -89,24 +92,40 @@ internal Expression* binaryOperation(char op, Expression* left, Expression* righ
             return expressionFactorCreate(op, left, right);
         } break;
     }
+
+    ckit_assert(FALSE); // This shouldn't happen?
+    return NULLPTR;
 }
 
-internal Expression* parseExpression(Parser* parser) {
-    // Expression* expr = parseTerm();
+// <Factor>     ::= <Unary> (('*'|'/') <Unary>)*
+internal Expression* parseFactor(Parser* parser) {
+    Expression* expr = parseUnary(parser);
 
-
-    Expression* expr = parsePrimary(parser);
-
-    /*
-    while (consumeOnMatch(parser, SPL_TOKEN_PLUS) || consumeOnMatch(parser, SPL_TOKEN_MINUS)) {
-        Expression op = previousToken(parser);
-        Expression right = parseTerm(parser);
-
-        expr = binaryOperation(expr, op, right);
+    while (consumeOnMatch(parser, SPL_TOKEN_STAR) || consumeOnMatch(parser, SPL_TOKEN_DIVISION)) {
+        SPL_Token op = previousToken(parser);
+        Expression* right = parseUnary(parser);
+        expr = binaryOperation(parser, op, expr, right);
     }
-    */
 
     return expr;
+}
+
+// <Term>       ::= <Factor> (('+'|'-') <Factor>)*
+internal Expression* parseTerm(Parser* parser) {
+    Expression* expr = parseFactor(parser);
+
+    while (consumeOnMatch(parser, SPL_TOKEN_PLUS) || consumeOnMatch(parser, SPL_TOKEN_MINUS)) {
+        SPL_Token op = previousToken(parser);
+        Expression* right = parseFactor(parser);
+        expr = binaryOperation(parser, op, expr, right);
+    }
+
+    return expr;
+}
+
+// <Expression> ::= <Term>
+internal Expression* parseExpression(Parser* parser) {
+    return parseTerm(parser);
 }
 
 Expression* generateAST(Parser* parser, SPL_Token* tokens) {

@@ -4,8 +4,8 @@
 
 typedef struct Parser {
     SPL_Token* tokens;
-    int current;
     SPL_Token tok;
+    int current;
 } Parser;
 
 Parser parserCreate();

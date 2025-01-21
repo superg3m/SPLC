@@ -1,5 +1,5 @@
 #pragma once
-#include <ckit.h>
+#include <token.h>
 
 typedef enum ExpressionType {
     EXPRESSION_PRIMARY,      // e.g., integer or float
@@ -24,18 +24,18 @@ typedef struct Primary {
 } Primary;
 
 typedef struct Unary {
-    char op;
+    SPL_Token op;
     Expression* operand;
 } Unary;
 
 typedef struct Factor {
-    char op; 
+    SPL_Token op; 
     Expression* left; 
     Expression* right;
 } Factor;
 
 typedef struct Term {
-    char op; 
+    SPL_Token op; 
     Expression *left; 
     Expression *right;
 } Term;
@@ -55,13 +55,11 @@ typedef struct Expression {
     };
 } Expression; 
 
-// EXPRESSION_NEW(EXPRESSION_PRIMARY, Primary, primary, {PRIMARY_FLOAT, 5.6})
-Expression* expressionNew(Expression expression);
 Expression* expressionPrimaryIntegerCreate(int num);
 Expression* expressionPrimaryFloatCreate(float num);
-Expression* expressionUnaryCreate(char op, Expression* operand);
-Expression* expressionTermCreate(char op, Expression* left, Expression* right);
-Expression* expressionFactorCreate(char op, Expression* left, Expression* right);
+Expression* expressionUnaryCreate(SPL_Token op, Expression* operand);
+Expression* expressionTermCreate(SPL_Token op, Expression* left, Expression* right);
+Expression* expressionFactorCreate(SPL_Token op, Expression* left, Expression* right);
 
 // <Expression> ::= <Term>
 // <Term>       ::= <Factor> (('+'|'-') <Factor>)*

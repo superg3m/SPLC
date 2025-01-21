@@ -19,7 +19,7 @@ Expression* expressionPrimaryFloatCreate(float num) {
     return ret;
 }
 
-Expression* expressionUnaryCreate(char op, Expression* operand) {
+Expression* expressionUnaryCreate(SPL_Token op, Expression* operand) {
     Expression* ret = ckit_alloc(sizeof(Expression));
     ret->type = EXPRESSION_URARY;
     ret->unary.op = op;
@@ -28,7 +28,7 @@ Expression* expressionUnaryCreate(char op, Expression* operand) {
     return ret;
 }
 
-Expression* expressionTermCreate(char op, Expression* left, Expression* right) {
+Expression* expressionTermCreate(SPL_Token op, Expression* left, Expression* right) {
     Expression* ret = ckit_alloc(sizeof(Expression));
     ret->type = EXPRESSION_TERM;
     ret->term.op = op;
@@ -38,7 +38,7 @@ Expression* expressionTermCreate(char op, Expression* left, Expression* right) {
     return ret;
 }
 
-Expression* expressionFactorCreate(char op, Expression* left, Expression* right) {
+Expression* expressionFactorCreate(SPL_Token op, Expression* left, Expression* right) {
     Expression* ret = ckit_alloc(sizeof(Expression));
     ret->type = EXPRESSION_FACTOR;
     ret->term.op = op;
