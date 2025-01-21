@@ -55,11 +55,7 @@ typedef struct Expression {
     };
 } Expression; 
 
-Expression* expressionPrimaryIntegerCreate(int num);
-Expression* expressionPrimaryFloatCreate(float num);
-Expression* expressionUnaryCreate(SPL_Token op, Expression* operand);
-Expression* expressionTermCreate(SPL_Token op, Expression* left, Expression* right);
-Expression* expressionFactorCreate(SPL_Token op, Expression* left, Expression* right);
+void expressionPrint(Expression* expression);
 
 // <Expression> ::= <Term>
 // <Term>       ::= <Factor> (('+'|'-') <Factor>)*

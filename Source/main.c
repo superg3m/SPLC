@@ -37,16 +37,11 @@ int main(int argc, char** argv) {
     Parser parser = parserCreate();
     Expression* ast = generateAST(&parser, token_stream);
     if (ast) {
-        if (ast->primary.PrimaryType == PRIMARY_INTEGER) {
-            LOG_DEBUG("Integer: %d\n", ast->primary.integer_num);
-        } else {
-            LOG_DEBUG("Float: %f\n", ast->primary.float_num);
-        }
+        expressionPrint(ast);
     }
 
-    // print_ast(ast);
 
-    ckit_free(ast);
     ckit_vector_free(token_stream);
+    parserFree(&parser);
     ckit_cleanup();
 }

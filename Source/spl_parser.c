@@ -1,13 +1,23 @@
 #include <spl_parser.h>
 
+Expression* expressionPrimaryIntegerCreate(CKIT_Arena* parser_arena, int num);
+Expression* expressionPrimaryFloatCreate(CKIT_Arena* parser_arena, float num);
+Expression* expressionUnaryCreate(CKIT_Arena* parser_arena, SPL_Token op, Expression* operand);
+Expression* expressionTermCreate(CKIT_Arena* parser_arena, SPL_Token op, Expression* left, Expression* right);
+Expression* expressionFactorCreate(CKIT_Arena* parser_arena, SPL_Token op, Expression* left, Expression* right);
+
 Parser parserCreate() {
     Parser ret;
     ret.tokens = NULLPTR;
     ret.current = 0;
     ret.tok;
-    // ret.arena_allocator = ckit_arena_create(KiloBytes(2), "Parser Allocator");
+    ret.arena_allocator = ckit_arena_create(KiloBytes(2), "Parser Allocator");
 
     return ret;
+}
+
+void parserFree(Parser* parser) {
+    ckit_arena_free(parser->arena_allocator);
 }
 
 internal void consumeNextToken(Parser* parser) {
@@ -49,10 +59,10 @@ internal SPL_Token previousToken(Parser* parser) {
 internal Expression* parsePrimary(Parser* parser) {
     if (consumeOnMatch(parser, SPL_TOKEN_INTEGER_LITERAL)) { 
         int num = atoi(previousToken(parser).lexeme);
-        return expressionPrimaryIntegerCreate(num);
+        return expressionPrimaryIntegerCreate(parser->arena_allocator, num);
     } else if (consumeOnMatch(parser, SPL_TOKEN_FLOAT_LITERAL)) {
         float num = atof(previousToken(parser).lexeme);
-        return expressionPrimaryFloatCreate(num);
+        return expressionPrimaryFloatCreate(parser->arena_allocator, num);
     } else if (consumeOnMatch(parser, SPL_TOKEN_LEFT_PAREN)) {
         /*
         Expression* expression = parseExpression();
@@ -73,7 +83,7 @@ Expression* parseUnary(Parser* parser) {
     if (consumeOnMatch(parser, SPL_TOKEN_NOT) || consumeOnMatch(parser, SPL_TOKEN_MINUS) || consumeOnMatch(parser, SPL_TOKEN_PLUS)) {
         SPL_Token op = previousToken(parser);
         Expression* operand = parsePrimary(parser);
-        return expressionUnaryCreate(op, operand);
+        return expressionUnaryCreate(parser->arena_allocator, op, operand);
     }
 
     return parsePrimary(parser);
@@ -84,12 +94,12 @@ internal Expression* binaryOperation(Parser* parser, SPL_Token op, Expression* l
     switch (operation) {
         case '+':
         case '-': {
-            return expressionTermCreate(op, left, right);
+            return expressionTermCreate(parser->arena_allocator, op, left, right);
         } break;
 
         case '*':
         case '/': {
-            return expressionFactorCreate(op, left, right);
+            return expressionFactorCreate(parser->arena_allocator, op, left, right);
         } break;
     }
 

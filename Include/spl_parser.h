@@ -6,6 +6,7 @@ typedef struct Parser {
     SPL_Token* tokens;
     SPL_Token tok;
     int current;
+    CKIT_Arena* arena_allocator;
 } Parser;
 
 Parser parserCreate();
