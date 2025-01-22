@@ -40,8 +40,7 @@ int main(int argc, char** argv) {
         expressionPrint(ast);
     }
 
-
     ckit_vector_free(token_stream);
     parserFree(&parser);
-    ckit_cleanup();
+    ckit_cleanup(TRUE);
 }

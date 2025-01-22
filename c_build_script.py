@@ -7,6 +7,7 @@ compiler_std_version = "c11"
 compiler_warning_level = ""
 compiler_disable_specific_warnings = []
 compiler_treat_warnings_as_errors = True
+compiler_disable_warnings = False
 
 if not IS_WINDOWS():
     compiler_name = "gcc"
@@ -34,12 +35,13 @@ procedures_config = {
     "SPL compiler": {
         "build_directory": f"./build_{compiler_name}",
         "output_name": f"splc.exe",
-        "source_files": ["../Source/*.c"],
+        "source_files": ["../Source/*.c", "../vender/cJSON/*.c"],
         "additional_libs": libs,
         "compile_time_defines": [],
         "include_paths": [
             "../Include", 
-            "../ckit"
+            "../ckit",
+            "../vender/cJSON"
         ],
     },
 }

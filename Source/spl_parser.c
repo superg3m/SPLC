@@ -5,6 +5,9 @@ Expression* expressionPrimaryFloatCreate(CKIT_Arena* parser_arena, float num);
 Expression* expressionUnaryCreate(CKIT_Arena* parser_arena, SPL_Token op, Expression* operand);
 Expression* expressionTermCreate(CKIT_Arena* parser_arena, SPL_Token op, Expression* left, Expression* right);
 Expression* expressionFactorCreate(CKIT_Arena* parser_arena, SPL_Token op, Expression* left, Expression* right);
+Expression* expressionGroupingCreate(CKIT_Arena* parser_arena, Expression* expression);
+
+Expression* parseExpression(Parser* parser);
 
 Parser parserCreate() {
     Parser ret;
@@ -61,17 +64,15 @@ internal Expression* parsePrimary(Parser* parser) {
         int num = atoi(previousToken(parser).lexeme);
         return expressionPrimaryIntegerCreate(parser->arena_allocator, num);
     } else if (consumeOnMatch(parser, SPL_TOKEN_FLOAT_LITERAL)) {
-        float num = atof(previousToken(parser).lexeme);
+        float num = (float)atof(previousToken(parser).lexeme);
         return expressionPrimaryFloatCreate(parser->arena_allocator, num);
     } else if (consumeOnMatch(parser, SPL_TOKEN_LEFT_PAREN)) {
-        /*
-        Expression* expression = parseExpression();
+        Expression* expression = parseExpression(parser);
         if (!consumeOnMatch(parser, SPL_TOKEN_RIGHT_PAREN)) {
             reportError(parser, "Error: ')' expected");
         } else  {
-            return expressionGroupingCreate(expression);
+            return expressionGroupingCreate(parser->arena_allocator, expression);
         }
-        */
     }
 
     return NULLPTR;
