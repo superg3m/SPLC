@@ -1,6 +1,6 @@
 #pragma once
 #include <expression.h>
-#include <cJSON.h>
+#include <cj.h>
 
 Expression* expressionPrimaryIntegerCreate(CKIT_Arena* parser_arena, int num) {
     Expression* ret = ckit_arena_push(parser_arena, Expression);
@@ -71,18 +71,18 @@ String expressionString(Expression* expression) {
     switch (expression->type) {
         case EXPRESSION_PRIMARY: {
             if (expression->primary.PrimaryType == PRIMARY_INTEGER) {
-                return ckit_str_sprint("%d", expression->primary.integer_num);
+                return ckit_str_sprint(NULLPTR, "%d", expression->primary.integer_num);
             } else if (expression->primary.PrimaryType == PRIMARY_FLOAT) {
-                return ckit_str_sprint("%f", expression->primary.float_num);
+                return ckit_str_sprint(NULLPTR, "%f", expression->primary.float_num);
             }
         } break;
 
         case EXPRESSION_URARY: {
             char* operation = expression->unary.op.lexeme;
             if (expression->unary.operand->type == EXPRESSION_PRIMARY) {
-                return ckit_str_sprint("\"UnaryOp\": \"op\": \"%s\", \"operand\": %s", operation, expressionString(expression->unary.operand));
+                return ckit_str_sprint(NULLPTR, "\"UnaryOp\": {\"op\": \"%s\", \"operand\": %s}", operation, expressionString(expression->unary.operand));
             } else {
-                return ckit_str_sprint("\"UnaryOp\": \"op\": \"%s\", \"operand\": {%s}", operation, expressionString(expression->unary.operand));
+                return ckit_str_sprint(NULLPTR, "\"UnaryOp\": {\"op\": \"%s\", \"operand\": {%s}}", operation, expressionString(expression->unary.operand));
             }
         } break;
         
@@ -91,10 +91,10 @@ String expressionString(Expression* expression) {
             Boolean left_is_primary = expression->factor.left->type == EXPRESSION_PRIMARY;
             Boolean right_is_primary = expression->factor.right->type == EXPRESSION_PRIMARY;
             
-            String left_to_replace = ckit_str_sprint(leftFMT[left_is_primary], expressionString(expression->factor.left));
-            String right_to_replace = ckit_str_sprint(rightFMT[right_is_primary], expressionString(expression->factor.right));
+            String left_to_replace = ckit_str_sprint(NULLPTR, leftFMT[left_is_primary], expressionString(expression->factor.left));
+            String right_to_replace = ckit_str_sprint(NULLPTR, rightFMT[right_is_primary], expressionString(expression->factor.right));
 
-            return ckit_str_sprint("\"BinaryOp\": {\"op\": \"%s\", %s, %s}", operation, left_to_replace, right_to_replace);
+            return ckit_str_sprint(NULLPTR, "\"BinaryOp\": {\"op\": \"%s\", %s, %s}", operation, left_to_replace, right_to_replace);
         } break;
 
         case EXPRESSION_TERM: {
@@ -102,14 +102,14 @@ String expressionString(Expression* expression) {
             Boolean left_is_primary = expression->term.left->type == EXPRESSION_PRIMARY;
             Boolean right_is_primary = expression->term.right->type == EXPRESSION_PRIMARY;
             
-            String left_to_replace = ckit_str_sprint(leftFMT[left_is_primary], expressionString(expression->term.left));
-            String right_to_replace = ckit_str_sprint(rightFMT[right_is_primary], expressionString(expression->term.right));
+            String left_to_replace = ckit_str_sprint(NULLPTR, leftFMT[left_is_primary], expressionString(expression->term.left));
+            String right_to_replace = ckit_str_sprint(NULLPTR, rightFMT[right_is_primary], expressionString(expression->term.right));
 
-            return ckit_str_sprint("\"BinaryOp\": {\"op\": \"%s\", %s, %s}", operation, left_to_replace, right_to_replace);
+            return ckit_str_sprint(NULLPTR, "\"BinaryOp\": {\"op\": \"%s\", %s, %s}", operation, left_to_replace, right_to_replace);
         } break;
 
         case EXPRESSION_GROUPING: {
-            return ckit_str_sprint("\"Grouping\": {%s}", expressionString(expression->grouping.expression));
+            return ckit_str_sprint(NULLPTR, "\"Grouping\": {%s}", expressionString(expression->grouping.expression));
         } break;
     }
 
@@ -118,15 +118,19 @@ String expressionString(Expression* expression) {
 
 
 void expressionPrint(Expression* expression) {
-    char *json_string = ckit_cstr_sprint("{%s}", expressionString(expression));
+    char* json_string = ckit_cstr_sprint(NULLPTR, "{%s}", expressionString(expression));
+    LOG_PRINT("%s\n", json_string);
 
-    cJSON* json = cJSON_Parse(json_string);
-    ckit_assert_msg(json, "Error before: %s\n", cJSON_GetErrorPtr());
+    CJ_Arena* arena = cj_arena_create(0);
 
-    char* pretty_json = cJSON_Print(json);
+    JSON* json = cj_parse(arena, json_string);
+    ckit_assert_msg(json, "NOT VALID JSON");
+
+    char* pretty_json = cj_to_string(json);
     printf("%s\n", pretty_json);
 
-    cJSON_Delete(json);
-    free(pretty_json);
+    cj_arena_free(arena);
+    cj_free(pretty_json);
+
     ckit_free(json_string);
 }

@@ -13,7 +13,7 @@ if not IS_WINDOWS():
     compiler_name = "gcc"
 
 project_name = "splc"
-project_dependencies = ["ckit"]
+project_dependencies = ["ckit", "cj"]
 project_rebuild_project_dependencies = False
 project_debug_with_visual_studio = False
 project_executable_procedures = ["splc.exe ../SPL_Related/test.spl"]
@@ -35,13 +35,13 @@ procedures_config = {
     "SPL compiler": {
         "build_directory": f"./build_{compiler_name}",
         "output_name": f"splc.exe",
-        "source_files": ["../Source/*.c", "../vender/cJSON/*.c"],
+        "source_files": ["../Source/*.c", "../cj/cj.c"],
         "additional_libs": libs,
         "compile_time_defines": [],
         "include_paths": [
             "../Include", 
             "../ckit",
-            "../vender/cJSON"
+            "../cj"
         ],
     },
 }
