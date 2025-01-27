@@ -119,7 +119,6 @@ String expressionString(Expression* expression) {
 
 void expressionPrint(Expression* expression) {
     char* json_string = ckit_cstr_sprint(NULLPTR, "{%s}", expressionString(expression));
-    LOG_PRINT("%s\n", json_string);
 
     CJ_Arena* arena = cj_arena_create(0);
 
