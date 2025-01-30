@@ -129,7 +129,7 @@ void expressionPrint(Expression* expression) {
     printf("%s\n", pretty_json);
 
     cj_arena_free(arena);
-    cj_free(pretty_json);
+    free(pretty_json);
 
     ckit_free(json_string);
 }
