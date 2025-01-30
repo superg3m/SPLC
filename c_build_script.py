@@ -8,13 +8,14 @@ compiler_warning_level = ""
 compiler_disable_specific_warnings = []
 compiler_treat_warnings_as_errors = True
 compiler_disable_warnings = False
+compiler_disable_sanitizer = False
 
 if not IS_WINDOWS():
     compiler_name = "gcc"
 
 project_name = "splc"
 project_dependencies = ["ckit", "cj"]
-project_rebuild_project_dependencies = False
+project_rebuild_project_dependencies = True
 project_debug_with_visual_studio = False
 project_executable_procedures = ["splc.exe ../SPL_Related/test.spl"]
 

@@ -2,7 +2,7 @@
 #include <utils.h>
 
 internal void lexerInitalizeSyntaxTable(Lexer* lexer) {
-    internal char* syntaxLookup[] = { 
+    char* syntaxLookup[] = { 
         "!", "$", "&", "(", ")",
         "*", "+", ",", "-", ".", "/", ";",
         "<", "=", ">", "[", "]", "{", "|", "}",
@@ -11,7 +11,7 @@ internal void lexerInitalizeSyntaxTable(Lexer* lexer) {
         "<<=", ">>=", "---", "[..]", "&&", "||", "//"
     };
 
-    internal SPL_TokenType syntaxTokenTable[] = {
+    SPL_TokenType syntaxTokenTable[] = {
         SPL_TOKEN_NOT, SPL_TOKEN_GENERIC, SPL_TOKEN_BITWISE_AND, 
         SPL_TOKEN_LEFT_PAREN, SPL_TOKEN_RIGHT_PAREN, SPL_TOKEN_STAR, 
         SPL_TOKEN_PLUS, SPL_TOKEN_COMMA, SPL_TOKEN_MINUS, SPL_TOKEN_DOT, 
@@ -37,7 +37,7 @@ internal void lexerInitalizeSyntaxTable(Lexer* lexer) {
 }
 
 internal void lexerInitalizeKeywordTable(Lexer* lexer) {
-     internal SPL_TokenType keywordTokenTable[] = {
+    SPL_TokenType keywordTokenTable[] = {
         SPL_TOKEN_STRUCT, SPL_TOKEN_STRUCT_INTERFACE, SPL_TOKEN_STRUCT_IMPL,
         SPL_TOKEN_UNION, SPL_TOKEN_STATIC, SPL_TOKEN_EXTERN, SPL_TOKEN_DEFER,
         SPL_TOKEN_IF, SPL_TOKEN_ELSE, SPL_TOKEN_FOR, SPL_TOKEN_WHILE,
@@ -109,8 +109,8 @@ Lexer lexerCreate() {
     lexer.source = NULLPTR;
     lexer.source_size = 0;
 
-    lexer.syntaxTable = ckit_hashmap_create(16, SPL_Token, FALSE);
-    lexer.keywordTable = ckit_hashmap_create(16, SPL_Token, FALSE);
+    lexer.syntaxTable = ckit_hashmap_create(16, SPL_TokenType, FALSE);
+    lexer.keywordTable = ckit_hashmap_create(16, SPL_TokenType, FALSE);
     lexer.directiveTable = ckit_hashset_create(16);
     lexer.codeGenTable = ckit_hashset_create(16);
     lexer.primitiveTable = ckit_hashset_create(16);
@@ -138,7 +138,7 @@ internal void lexerReset(Lexer* lexer) {
 }
 
 internal String getScratchBuffer(Lexer* lexer) {
-    return ckit_substring(lexer->source, lexer->left_pos, lexer->right_pos - 1);
+    return ckit_str_create_custom(lexer->source + lexer->left_pos, (lexer->right_pos - lexer->left_pos), (lexer->right_pos - lexer->left_pos) + 1);
 }
 
 internal SPL_TokenType getAcceptedSyntax(Lexer* lexer) {
