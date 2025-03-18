@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
     LOG_PRINT("\n");
     LOG_SUCCESS("------------ LEXICAL ANALYSIS ------------\n");
 
-    for (int i = 0; i < ckit_vector_count(token_stream); i++ ) {
+    for (u32 i = 0; i < ckit_vector_count(token_stream); i++ ) {
         SPL_Token token = token_stream[i];
         LOG_PRINT("%s(%s) | Line: %d\n", tokenTypeToString(token.type), token.lexeme, token.line);
     }
