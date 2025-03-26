@@ -126,7 +126,7 @@ void lexerFree(Lexer* lexer) {
     ckit_hashset_free(lexer->directiveTable);
     ckit_hashset_free(lexer->codeGenTable);
     ckit_hashset_free(lexer->primitiveTable);
-    ckit_vector_free(lexer->tokens);
+    // ckit_vector_free(lexer->tokens);
 }
 
 internal void lexerReset(Lexer* lexer) {

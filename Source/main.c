@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
     lexerFree(&lexer);
 
 
-    /*
+
     // parse
     LOG_PRINT("\n");
     LOG_SUCCESS("------------ PARSING ------------\n");
@@ -43,8 +43,8 @@ int main(int argc, char** argv) {
     }
 
     ckit_vector_free(token_stream);
-    parserFree(&parser);
-    
+    // parserFree(&parser);
+    /*
     */
    ckit_cleanup(TRUE);
 }
