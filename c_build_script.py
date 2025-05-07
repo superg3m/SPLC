@@ -28,7 +28,7 @@ pc: ProjectConfig = ProjectConfig(
     ],
     project_debug_with_visual_studio = True,
     project_rebuild_project_dependencies = False,
-    project_executable_names  = ["splc.exe ../SPL_Related/test.spl"]
+    project_executable_names  = ["splc.exe ../../SPL_Related/test.spl"]
 )
 
 cc: CompilerConfig = CompilerConfig(
@@ -57,7 +57,7 @@ else:
     cc.compiler_disable_specific_warnings = ["deprecated", "parentheses"]
 
 build_postfix = f"build_{cc.compiler_name}/{C_BUILD_BUILD_TYPE()}"
-executable_procedure_libs = [f"../ckit/{build_postfix}/{GET_LIB_NAME(cc, 'ckit')}"]
+executable_procedure_libs = [f"../../ckit/{build_postfix}/{GET_LIB_NAME(cc, 'ckit')}"]
 if IS_WINDOWS():
     windows_libs = [GET_LIB_FLAG(cc, "User32"), GET_LIB_FLAG(cc, "Gdi32")]
     executable_procedure_libs += windows_libs
