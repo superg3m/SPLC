@@ -14,7 +14,7 @@ def FIND_C_BUILD(current_dir):
 FIND_C_BUILD(os.path.abspath(os.path.dirname(__file__)))
 from c_build.source.UserUtilities import *
 from c_build.source.Manager import *
-# --------------------------------------------------------------------------------------s
+# --------------------------------------------------------------------------------------
 
 pc: ProjectConfig = ProjectConfig(
     project_name = "splc",
