@@ -19,12 +19,8 @@ from c_build.source.Manager import *
 pc: ProjectConfig = ProjectConfig(
     project_name = "splc",
     project_dependencies = [
-        Dependency(
-            name="ckit"
-        ), 
-        Dependency(
-            name="cj" 
-        )
+        Dependency("ckit"), 
+        Dependency("cj")
     ],
     project_debug_with_visual_studio = True,
     project_rebuild_project_dependencies = False,
