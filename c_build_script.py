@@ -59,7 +59,7 @@ else:
 build_postfix = f"build_{cc.compiler_name}/{C_BUILD_BUILD_TYPE()}"
 executable_procedure_libs = [f"../ckit/{build_postfix}/{GET_LIB_NAME(cc, 'ckit')}"]
 if IS_WINDOWS():
-    windows_libs = [GET_LIB_FLAG(cc, "User32.lib"), GET_LIB_FLAG(cc, "Gdi32.lib")]
+    windows_libs = [GET_LIB_FLAG(cc, "User32"), GET_LIB_FLAG(cc, "Gdi32")]
     executable_procedure_libs += windows_libs
 
 procedures_config = {
