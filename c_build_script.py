@@ -18,10 +18,17 @@ from c_build.source.Manager import *
 
 pc: ProjectConfig = ProjectConfig(
     project_name = "splc",
-    project_dependencies = ["ckit", "cj"],
+    project_dependencies = [
+        Dependency(
+            name="ckit"
+        ), 
+        Dependency(
+            name="cj" 
+        )
+    ],
     project_debug_with_visual_studio = True,
     project_rebuild_project_dependencies = False,
-    project_executable_procedures  = ["splc.exe ../SPL_Related/test.spl"]
+    project_executable_names  = ["splc.exe ../SPL_Related/test.spl"]
 )
 
 cc: CompilerConfig = CompilerConfig(
@@ -55,7 +62,7 @@ if IS_WINDOWS():
     executable_procedure_libs += windows_libs
 
 procedures_config = {
-    "splc": ProcedureConfigElement(
+    "splc": ProcedureConfig(
         build_directory = f"./build_{cc.compiler_name}",
         output_name = "splc.exe",
         source_files = ["../Source/*.c", "../cj/cj.c"],

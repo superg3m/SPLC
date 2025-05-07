@@ -3,12 +3,23 @@ if ($PSVersionTable.Platform -eq "Unix") {
     Set-Alias python python3
 }
 
+. ./c_build/validate_temp_files.ps1 bootstrap.ps1
 . ./c_build/validate_temp_files.ps1 $MyInvocation.MyCommand.Name
 
 Push-Location  "./c_build"
 git fetch origin -q
 git reset --hard origin/main -q
 git pull -q
+
+$venvPath = "./.venv"
+$venvActivateScript = "$venvPath\Scripts\Activate.ps1"
+if (Test-Path -Path $venvActivateScript) {
+    . $venvActivateScript
+}
 Pop-Location
 
-python -B -m c_build_script --execution_type "CLEAN"
+if ($args[0] -eq "-debug") {
+    python -B -m c_build_script --execution_type "CLEAN" --build_type "debug"
+} else {
+    python -B -m c_build_script --execution_type "CLEAN" --build_type "release"
+}
