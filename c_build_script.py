@@ -20,9 +20,9 @@ pc: ProjectConfig = ProjectConfig(
     project_name = "splc",
     project_dependencies = [
         Dependency(
-            "ckit",
-            always_pull=True
-        ), 
+            "ckg",
+            branch_name="CompleteRewrite"
+        ),
         Dependency(
             "cj"
         )
@@ -43,7 +43,7 @@ cc: CompilerConfig = CompilerConfig(
 )
 
 if IS_WINDOWS() and not C_BUILD_IS_DEPENDENCY():
-    cc.compiler_name = "gcc"
+    cc.compiler_name = "cl"
 elif IS_DARWIN() and not C_BUILD_IS_DEPENDENCY():
     cc.compiler_name = "clang"
 elif IS_LINUX() and not C_BUILD_IS_DEPENDENCY():
@@ -58,7 +58,7 @@ else:
     cc.compiler_disable_specific_warnings = ["deprecated", "parentheses", "switch"]
 
 build_postfix = f"build_{cc.compiler_name}/{C_BUILD_BUILD_TYPE()}"
-executable_procedure_libs = [f"../../ckit/{build_postfix}/{GET_LIB_NAME(cc, 'ckit')}"]
+executable_procedure_libs = [f"../../ckg/{build_postfix}/{GET_LIB_NAME(cc, 'ckg')}"]
 if IS_WINDOWS():
     windows_libs = [GET_LIB_FLAG(cc, "User32"), GET_LIB_FLAG(cc, "Gdi32")]
     executable_procedure_libs += windows_libs
@@ -73,7 +73,7 @@ procedures_config = {
         compiler_inject_into_args = [],
         include_paths = [
             "../../Include", 
-            "../../ckit",
+            "../../ckg",
             "../../cj"
         ]
     ),
