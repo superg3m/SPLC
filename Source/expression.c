@@ -1,4 +1,3 @@
-#pragma once
 #include <expression.h>
 #include <cj.h>
 

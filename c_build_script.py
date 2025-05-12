@@ -19,8 +19,13 @@ from c_build.source.Manager import *
 pc: ProjectConfig = ProjectConfig(
     project_name = "splc",
     project_dependencies = [
-        Dependency("ckit"), 
-        Dependency("cj")
+        Dependency(
+            "ckit",
+            always_pull=True
+        ), 
+        Dependency(
+            "cj"
+        )
     ],
     project_debug_with_visual_studio = True,
     project_rebuild_project_dependencies = False,
@@ -38,7 +43,7 @@ cc: CompilerConfig = CompilerConfig(
 )
 
 if IS_WINDOWS() and not C_BUILD_IS_DEPENDENCY():
-    cc.compiler_name = "cl"
+    cc.compiler_name = "gcc"
 elif IS_DARWIN() and not C_BUILD_IS_DEPENDENCY():
     cc.compiler_name = "clang"
 elif IS_LINUX() and not C_BUILD_IS_DEPENDENCY():
@@ -50,7 +55,7 @@ if cc.compiler_name == "cl":
     cc.compiler_disable_specific_warnings = ["5105", "4668", "4820", "4996"]
 else:
     cc.compiler_warning_level = "all"
-    cc.compiler_disable_specific_warnings = ["deprecated", "parentheses"]
+    cc.compiler_disable_specific_warnings = ["deprecated", "parentheses", "switch"]
 
 build_postfix = f"build_{cc.compiler_name}/{C_BUILD_BUILD_TYPE()}"
 executable_procedure_libs = [f"../../ckit/{build_postfix}/{GET_LIB_NAME(cc, 'ckit')}"]

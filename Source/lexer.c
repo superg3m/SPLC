@@ -129,7 +129,7 @@ void lexerFree(Lexer* lexer) {
     // ckit_vector_free(lexer->tokens);
 }
 
-internal void lexerReset(Lexer* lexer) {
+UNUSED_FUNCTION internal void lexerReset(Lexer* lexer) {
     lexer->left_pos  = 0;
     lexer->right_pos = 0;
     lexer->line      = 1;
