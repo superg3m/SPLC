@@ -37,6 +37,6 @@
 
 build_*/
 c_build/
-ckit/
+ckg/
 cj/
 .vscode/
