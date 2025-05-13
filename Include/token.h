@@ -132,16 +132,16 @@ typedef struct SPL_Token {
     union {
         char c;
         int i;
-        float f;
+        double f;
         bool b;
     };
     u32 line;
 } SPL_Token;
 
-#define SPL_TOKEN_CREATE_CUSTOM(token_type, name, line) (SPL_Token){(token_type), (name), 0, (line)}
-
 SPL_Token spl_token_from_string(CKG_StringView sv, u32 line);
+
 #define SPL_TOKEN_CREATE(value, line) spl_token_from_string(value, line)
+#define SPL_TOKEN_CREATE_CUSTOM(token_type, name, line) (SPL_Token){(token_type), (name), 0, (line)}
 
 void token_print(SPL_Token token, char* indent);
 SPL_TokenType token_get_keyword(char* str, u64 str_length);

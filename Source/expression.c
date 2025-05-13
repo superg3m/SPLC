@@ -18,7 +18,7 @@ Expression* integer_expression_create(int value, int line) {
     return ret;
 }
 
-Expression* float_expression_create(float value, int line) {
+Expression* float_expression_create(double value, int line) {
     Expression* ret = ckg_alloc(sizeof(Expression));
     ret->type = EXPRESSION_TYPE_FLOAT;
     ret->floating->value = value;

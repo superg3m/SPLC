@@ -14,7 +14,7 @@ typedef struct IntegerExpression {
 } IntegerExpression;
 
 typedef struct FloatExpression {
-    float value;
+    double value;
     int line;
 } FloatExpression;
 
@@ -82,7 +82,7 @@ typedef struct Expression {
 
 Expression* string_expression_create(CKG_StringView name, int line);
 Expression* integer_expression_create(int value, int line);
-Expression* float_expression_create(float value, int line);
+Expression* float_expression_create(double value, int line);
 Expression* bool_expression_create(bool value, int line);
 Expression* identifier_expression_create(CKG_StringView name, int line);
 Expression* unary_expression_create(SPL_Token operation, Expression* operand, int line);

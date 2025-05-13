@@ -1,4 +1,5 @@
 #pragma once
+#include <expression.h>
 
 typedef enum AST_NodeType {
     AST_NODE_EXPRESSION,
@@ -7,7 +8,6 @@ typedef enum AST_NodeType {
 } AST_NodeType;
 
 typedef struct Program Program;
-typedef struct Expression Expression;
 typedef struct Statement Statement;
 
 typedef struct ASTNode {
@@ -20,3 +20,4 @@ typedef struct ASTNode {
 } ASTNode;
 
 ASTNode* ast_node_create(AST_NodeType type, void* node);
+void ast_pretty_print(ASTNode* ast);
