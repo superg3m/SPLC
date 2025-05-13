@@ -94,12 +94,57 @@ internal JSON* ast_to_json_helper(JSON* root, ASTNode* node, CJ_Arena* arena) {
             return root;
         } else if (expr->type == EXPRESSION_TYPE_GROUPING) {
             Expression* inner_expression = expr->grouping->value;
-            JSON* grouping_json = ast_to_json_helper(root, ast_node_create(AST_NODE_EXPRESSION, inner_expression), arena);
-            cj_push(root, "Grouping", grouping_json);
+            JSON* grouping_json = cj_create(arena);
+
+            cj_push(root, "Grouping", ast_to_json_helper(grouping_json, ast_node_create(AST_NODE_EXPRESSION, inner_expression), arena));
 
             return root;
         }
-    } 
+    } else if (node->type == AST_NODE_STATEMENT) {
+        Statement* stmt = node->statement;
+        if (stmt->type == STATEMENT_TYPE_PRINT) {
+            Expression* inner_expression = stmt->print_statement->value;
+            JSON* print_json = cj_create(arena);
+            cj_push(root, "PrintStatement", ast_to_json_helper(print_json, ast_node_create(AST_NODE_EXPRESSION, inner_expression), arena));
+
+            return root;
+        } else if (stmt->type == STATEMENT_TYPE_ASSIGNMENT) {
+            Expression* left = stmt->assignment_statement->left;
+            Expression* right = stmt->assignment_statement->right;
+
+            JSON* nested = cj_create(arena);
+            JSON* left_json = cj_create(arena);
+            JSON* right_json = cj_create(arena);
+
+            cj_push(nested, "left", ast_to_json_helper(left_json, ast_node_create(AST_NODE_EXPRESSION, left), arena));
+            cj_push(nested, "right", ast_to_json_helper(right_json, ast_node_create(AST_NODE_EXPRESSION, right), arena));
+            
+            cj_push(root, "AssignmentStatement", nested);
+
+            return root;
+        } else if (stmt->type == STATEMENT_TYPE_IF) {
+            Expression* condition = stmt->if_statement->value;
+            Statement** if_code_block = stmt->if_statement->if_code_block;
+            Statement** else_code_block = stmt->if_statement->else_code_block;
+
+            JSON* nested = cj_create(arena);
+            JSON* value_json = cj_create(arena);
+            JSON* if_code_block_json = cj_create(arena);
+            JSON* else_code_block_json = cj_create(arena);
+
+            cj_push(nested, "condition", ast_to_json_helper(value_json, ast_node_create(AST_NODE_EXPRESSION, condition), arena));
+            cj_push(nested, "if_code", ast_to_json_helper(if_code_block_json, ast_node_create(AST_NODE_EXPRESSION, if_code_block), arena));
+            cj_push(nested, "else_code", ast_to_json_helper(else_code_block_json, ast_node_create(AST_NODE_EXPRESSION, else_code_block), arena));
+            
+            cj_push(root, "IfStatement", nested);
+
+            return root;
+        } else if (stmt->type == STATEMENT_TYPE_WHILE) {
+            //return JSON_FLOAT(arena, expr->floating->value);
+        } else if (stmt->type == STATEMENT_TYPE_FOR) {
+            //return JSON_FLOAT(arena, expr->floating->value);
+        }
+    }
 
     return NULL;
 }

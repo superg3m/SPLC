@@ -9,7 +9,7 @@
 //                           └── Primary (literals, identifiers, etc.)
 
 #define parser_report_error(parser, fmt, ...) \
-CKG_LOG_ERROR("String: %s", token_strings[parser_peek_nth_token(parser, 0).type]);               \
+CKG_LOG_ERROR("String: %s\n", token_strings[parser_peek_nth_token(parser, 0).type]);               \
 CKG_LOG_ERROR("Error Line: %d | %s", parser_peek_nth_token(parser, 0).line, fmt, ##__VA_ARGS__); \
 ckg_assert(false)                                                                                \
 
@@ -30,7 +30,7 @@ internal SPL_Token parser_consume_next_token(Parser* parser) {
 
 internal void parser_expect(Parser* parser, SPL_TokenType expected_type) {
     if (expected_type && parser_peek_nth_token(parser, 0).type != expected_type) {
-        parser_report_error(parser, "Expected: %s | Got: %s", token_strings[expected_type], token_strings[parser_peek_nth_token(parser, 0).type]);
+        parser_report_error(parser, "Expected: %s | Got: %s\n", token_strings[expected_type], token_strings[parser_peek_nth_token(parser, 0).type]);
     }
 
     parser_consume_next_token(parser);
@@ -67,9 +67,7 @@ internal Expression* parse_primary_expression(Parser* parser) {
         return string_expression_create(tok.name, tok.line);
     } else if (parser_consume_on_match(parser, SPL_TOKEN_LEFT_PAREN)) {
         Expression* expression = parse_expression(parser);
-        if (!parser_consume_on_match(parser, SPL_TOKEN_RIGHT_PAREN)) {
-            parser_report_error(parser, "Expected ')'");
-        }
+        parser_expect(parser, SPL_TOKEN_RIGHT_PAREN);
 
         return grouping_expression_create(expression, parser_previous_token(parser).line);
     } else {
@@ -164,6 +162,24 @@ internal Expression* parse_expression(Parser* parser) {
     return parse_logical_expression(parser);
 }
 
+Statement* parse_statement(Parser* parser, bool requires_semi_colon);
+
+Statement** parse_scope(Parser* parser) {
+    Statement** code_block = NULLPTR;
+
+    parser_expect(parser, SPL_TOKEN_LEFT_CURLY);
+    while (parser_peek_nth_token(parser, 0).type != SPL_TOKEN_RIGHT_CURLY) {
+        if (parser->current >= ckg_vector_count(parser->tokens) - 1) {
+            parser_report_error(parser, "Missing closing brace\n");
+            ckg_vector_push(code_block, parse_statement(parser, true));
+        }
+    }
+
+    parser_expect(parser, SPL_TOKEN_RIGHT_CURLY);
+    return code_block;
+}
+
+
 static Statement* parse_if_statement(Parser* parser) {
     parser_expect(parser, SPL_TOKEN_IF);
     parser_expect(parser, SPL_TOKEN_LEFT_PAREN);
@@ -245,14 +261,14 @@ Statement* parse_statement(Parser* parser, bool requires_semi_colon) {
         }
     }
 
-    parser_report_error(parser, "No statements to interpret; this is not a valid program.");
+    parser_report_error(parser, "No statements to interpret; this is not a valid program.\n");
     return NULL;
 }
 
 ASTNode* parse(SPL_Token* token_stream) {
     Parser parser = {0};
     parser.tokens = token_stream;
-    ASTNode* ast = ast_node_create(AST_NODE_EXPRESSION, (void*)parse_expression(&parser));
+    ASTNode* ast = ast_node_create(AST_NODE_STATEMENT, (void*)parse_statement(&parser, true));
 
     return ast;
 }
