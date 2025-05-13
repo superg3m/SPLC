@@ -1,5 +1,6 @@
 #include <lexer.h>
 #include <spl_parser.h>
+#include <interpreter.h>
 
 #define TOTAL_MEMORY_SIZE KiloBytes(60)
 void* custom_alloc_callback(CKG_Allocator* allocator, size_t allocation_size) {
@@ -41,7 +42,11 @@ int main(int argc, char** argv) {
 	}
 
 	CKG_LOG_PRINT("Parser:\n");
-	ast_pretty_print(parse(token_stream));
+	ASTNode* ast = parse(token_stream);
+	ast_pretty_print(ast);
+
+	CKG_LOG_PRINT("Interpreter:\n");
+	interpret_ast(ast);
 
 	ckg_vector_free(token_stream);
     ckg_arena_free(&arena);

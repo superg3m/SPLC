@@ -28,7 +28,7 @@ pc: ProjectConfig = ProjectConfig(
         )
     ],
     project_debug_with_visual_studio = False,
-    project_rebuild_project_dependencies = False,
+    project_rebuild_project_dependencies = True,
     project_executable_names  = ["splc.exe ../../SPL_Source/test.spl"]
 )
 
@@ -39,7 +39,7 @@ cc: CompilerConfig = CompilerConfig(
     compiler_disable_specific_warnings = [""],
     compiler_treat_warnings_as_errors = True,
     compiler_disable_warnings  = False,
-    compiler_disable_sanitizer = False
+    compiler_disable_sanitizer = True
 )
 
 if IS_WINDOWS() and not C_BUILD_IS_DEPENDENCY():
