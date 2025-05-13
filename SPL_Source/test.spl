@@ -1,0 +1,48 @@
+/*
+This works because false makes the 3 never get interpreted in the context of this logical operator
+If you do true && 3 then it has to interpret 3 and it will give you an unsupported operator error
+*/
+
+// false && 3 // false
+// (22 + 1) % 3             // 2
+// 4 >= 3                   // true
+// 4 == 2                   // false
+// 4 != 2                   // true
+// (2.5 > 0) == false       // false
+// ~(3 < 1 + -6)            // true
+// 2 > 1 && 5 > 4          // true
+// 2 == 3 && 5 > 4         // false
+// 2 > 1 || 5 > 4           // true
+// false && false || true  // true
+// 2 > 1 && 4 > 6 || 7 + 3 >= 6 && 5 == 2 // false
+
+x = (22 + 1) % 3;
+x = x - 1;
+
+if (true) {
+    y = 7 + x;
+    x = y;
+    print(x);
+}
+
+
+if (x == 8) {
+    x = 5;
+    print("X's value is: " + x);
+    print("Hello: " + (3 * 4));
+    print("World: " + (32 / 2));
+} else {
+    print(3 / 2);
+    print(4);
+    print("WOWS: " + y);
+}
+
+i = 0;
+while (i < 5) {
+    print("WOW THIS ACTUALLY WORKS: " +  i);
+    i = i + 1;
+}
+
+for (j = 9; j >= x; j = j - 1) {
+    print("Ogga: " + j);
+}

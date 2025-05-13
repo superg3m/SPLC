@@ -25,10 +25,11 @@ int main(int argc, char** argv) {
 	char* file_name = argv[1];
 	u64 source_length = 0;
 	CKG_Error file_err = CKG_ERROR_SUCCESS;
+	CKG_LOG_ERROR("Can't find file: %s | err: %s\n", file_name, ckg_error_str(file_err));
 	u8* source = ckg_io_read_entire_file(file_name, &source_length, &file_err);
-	if (CKG_ERROR_IO_RESOURCE_NOT_FOUND) {
-		CKG_LOG_ERROR("Can't find file: %s\n", file_name);
-        return -1;
+	if (file_err != CKG_ERROR_SUCCESS) {
+		CKG_LOG_ERROR("Can't find file: %s | err: %s\n", file_name, ckg_error_str(file_err));
+        return file_err;
 	}
 
 	Lexer lexer = lexer_create();
