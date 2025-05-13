@@ -13,7 +13,7 @@ CKG_LOG_ERROR("String: %s", token_strings[parser_peek_nth_token(parser, 0).type]
 CKG_LOG_ERROR("Error Line: %d | %s", parser_peek_nth_token(parser, 0).line, fmt, ##__VA_ARGS__); \
 ckg_assert(false)                                                                                \
 
-SPL_Token parser_peek_nth_token(Parser* parser, int n) {
+internal SPL_Token parser_peek_nth_token(Parser* parser, int n) {
     if (parser->current + n > ckg_vector_count(parser->tokens) - 1) {
         return SPL_TOKEN_CREATE_CUSTOM(SPL_TOKEN_ILLEGAL_TOKEN, "", -1);
     }
@@ -21,32 +21,35 @@ SPL_Token parser_peek_nth_token(Parser* parser, int n) {
     return parser->tokens[parser->current + n];
 }
 
-SPL_Token parser_consume_next_token(Parser* parser, SPL_TokenType* expected_type) {
-    if (expected_type && parser_peek_nth_token(parser, 0).type != *expected_type) {
-        parser_report_error(parser, "Expected: %s | Got: %s", token_strings[*expected_type], token_strings[parser_peek_nth_token(parser, 0).type]);
-    }
-
+internal SPL_Token parser_consume_next_token(Parser* parser) {
     parser->tok = parser->tokens[parser->current];
     parser->current += 1;
 
     return parser->tok;
 }
 
-bool parser_consume_on_match(Parser* parser, SPL_TokenType expected_type) {
-    if (parser_peek_nth_token(parser, 0).type == expected_type) {
-        parser_consume_next_token(parser, NULLPTR);
-        return true;
+internal void parser_expect(Parser* parser, SPL_TokenType expected_type) {
+    if (expected_type && parser_peek_nth_token(parser, 0).type != expected_type) {
+        parser_report_error(parser, "Expected: %s | Got: %s", token_strings[expected_type], token_strings[parser_peek_nth_token(parser, 0).type]);
     }
 
+    parser_consume_next_token(parser);
+}
+
+internal bool parser_consume_on_match(Parser* parser, SPL_TokenType expected_type) {
+    if (parser_peek_nth_token(parser, 0).type == expected_type) {
+        parser_consume_next_token(parser);
+        return true;
+    }
 
     return false;
 }
 
-SPL_Token parser_previous_token(Parser* parser) {
+internal SPL_Token parser_previous_token(Parser* parser) {
     return parser->tokens[parser->current - 1];
 }
 
-Expression* parse_expression(Parser* parser);
+internal Expression* parse_expression(Parser* parser);
 // <primary> ::= INTEGER | FLOAT | TRUE | FALSE | STRING | PRIMITIVE_TYPE | IDENTIFIER | "(" <expression> ")"
 internal Expression* parse_primary_expression(Parser* parser) {
     if (parser_consume_on_match(parser, SPL_TOKEN_INTEGER_LITERAL)) {
@@ -70,7 +73,7 @@ internal Expression* parse_primary_expression(Parser* parser) {
 
         return grouping_expression_create(expression, parser_previous_token(parser).line);
     } else {
-        SPL_Token tok = parser_consume_next_token(parser, NULLPTR);
+        SPL_Token tok = parser_consume_next_token(parser);
         return identifier_expression_create(tok.name, tok.line);
     }
 }
@@ -159,6 +162,91 @@ internal Expression* parse_logical_expression(Parser* parser) {
 // <expression> ::= <logical_expr>
 internal Expression* parse_expression(Parser* parser) {
     return parse_logical_expression(parser);
+}
+
+static Statement* parse_if_statement(Parser* parser) {
+    parser_expect(parser, SPL_TOKEN_IF);
+    parser_expect(parser, SPL_TOKEN_LEFT_PAREN);
+    Expression* condition = parse_expression(parser);
+    parser_expect(parser, SPL_TOKEN_RIGHT_PAREN);
+    Statement** if_code_block = parse_scope(parser);
+
+    Statement** else_code_block = NULL;
+    if (parser_consume_on_match(parser, SPL_TOKEN_ELSE)) {
+        else_code_block = parse_scope(parser);
+    }
+
+    return if_statement_create(condition, if_code_block, else_code_block, parser_previous_token(parser).line);
+}
+
+static Statement* parse_while_statement(Parser* parser) {
+    parser_consume_on_match(parser, SPL_TOKEN_WHILE);
+    parser_consume_on_match(parser, SPL_TOKEN_LEFT_PAREN);
+    Expression* condition = parse_expression(parser);
+    parser_consume_on_match(parser, SPL_TOKEN_RIGHT_PAREN);
+    Statement** body = parse_scope(parser);
+
+    return while_statement_create(condition, body, parser_previous_token(parser).line);
+}
+
+static Statement* parse_print_statement(Parser* parser) {
+    parser_consume_on_match(parser, SPL_TOKEN_PRINT);
+    parser_consume_on_match(parser, SPL_TOKEN_LEFT_PAREN);
+    Expression* expr = parse_expression(parser);
+    parser_consume_on_match(parser, SPL_TOKEN_RIGHT_PAREN);
+    parser_consume_on_match(parser, SPL_TOKEN_SEMI_COLON);
+
+    return print_statement_create(expr, parser_previous_token(parser).line);
+}
+
+static Statement* parse_for_statement(Parser* parser) {
+    parser_consume_on_match(parser, SPL_TOKEN_FOR);
+    parser_consume_on_match(parser, SPL_TOKEN_LEFT_PAREN);
+
+    Statement* init = parse_statement(parser, true);
+    Expression* condition = parse_expression(parser);
+    parser_consume_on_match(parser, SPL_TOKEN_SEMI_COLON);
+    Statement* increment = parse_statement(parser, false);
+
+    parser_consume_on_match(parser, SPL_TOKEN_RIGHT_PAREN);
+    Statement** body = parse_scope(parser);
+
+    return for_statement_create(init, condition, increment, body, parser_previous_token(parser).line);
+}
+
+static Statement* parse_assignment_statement(Parser* parser, bool requires_semi_colon) {
+    Expression* left = parse_expression(parser);
+    parser_consume_on_match(parser, SPL_TOKEN_ASSIGNMENT);
+    Expression* right = parse_expression(parser);
+
+    if (requires_semi_colon) {
+        parser_consume_on_match(parser, SPL_TOKEN_SEMI_COLON);
+    }
+
+    return assignment_statement_create(left, right, parser_previous_token(parser).line);
+}
+
+Statement* parse_statement(Parser* parser, bool requires_semi_colon) {
+    SPL_TokenType next_token_type = parser_peek_nth_token(parser, 0).type;
+
+    if (next_token_type == SPL_TOKEN_IF) {
+        return parse_if_statement(parser);
+    } else if (next_token_type == SPL_TOKEN_WHILE) {
+        return parse_while_statement(parser);
+    } else if (next_token_type == SPL_TOKEN_PRINT) {
+        return parse_print_statement(parser);
+    } else if (next_token_type == SPL_TOKEN_FOR) {
+        return parse_for_statement(parser);
+    } else if (next_token_type == SPL_TOKEN_WHILE) {
+        return parse_while_statement(parser);
+    } else if (next_token_type == SPL_TOKEN_IDENTIFIER) {
+        if (parser_peek_nth_token(parser, 1).type == SPL_TOKEN_ASSIGNMENT) {
+            return parse_assignment_statement(parser, requires_semi_colon);
+        }
+    }
+
+    parser_report_error(parser, "No statements to interpret; this is not a valid program.");
+    return NULL;
 }
 
 ASTNode* parse(SPL_Token* token_stream) {
