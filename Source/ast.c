@@ -40,7 +40,7 @@ internal JSON* ast_to_json_helper(JSON* root, ASTNode* node, CJ_Arena* arena) {
     if (node->type == AST_NODE_EXPRESSION) {
         Expression* expr = node->expression;
         if (expr->type == EXPRESSION_TYPE_STRING) {
-            return JSON_STRING_VIEW(arena, TO_CJ_SV(expr->str->name));
+            return JSON_STRING_VIEW(arena, ((CJ_StringView){expr->str->name.data + 1, 0, expr->str->name.length - 2}));
         } else if (expr->type == EXPRESSION_TYPE_INTEGER) {
             return JSON_INT(arena, expr->integer->value);
         } else if (expr->type == EXPRESSION_TYPE_FLOAT) {
