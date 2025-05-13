@@ -1,5 +1,4 @@
 #pragma once
-
 #include <ckg.h>
 
 typedef enum SPL_TokenType {

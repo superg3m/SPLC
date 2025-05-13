@@ -77,29 +77,29 @@ SPL_TokenType token_get_syntax(char* str, u64 str_length) {
     } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG("--"))) {
         return SPL_TOKEN_DECREMENT;
     } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG("=="))) {
-        return SPL_TOKEN_ASSIGNMENT;
+        return SPL_TOKEN_EQUALS;
     } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG("!="))) {
-        return SPL_TOKEN_ASSIGNMENT;
+        return SPL_TOKEN_NOT_EQUALS;
     } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG("+="))) {
-        return SPL_TOKEN_ASSIGNMENT;
+        return SPL_TOKEN_PLUS_EQUALS;
     } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG("-="))) {
-        return SPL_TOKEN_ASSIGNMENT;
+        return SPL_TOKEN_MINUS_EQUALS;
     } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG("*="))) {
-        return SPL_TOKEN_ASSIGNMENT;
+        return SPL_TOKEN_MULTIPLICATION_EQUALS;
     } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG("/="))) {
-        return SPL_TOKEN_ASSIGNMENT;
+        return SPL_TOKEN_DIVISION_EQUALS;
     } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG(">="))) {
-        return SPL_TOKEN_ASSIGNMENT;
+        return SPL_TOKEN_GREATER_THAN_EQUALS;
     } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG("<="))) {
-        return SPL_TOKEN_ASSIGNMENT;
+        return SPL_TOKEN_LESS_THAN_EQUALS;
     } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG("<<"))) {
         return SPL_TOKEN_BITWISE_LEFT_SHIFT;
     } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG(">>"))) {
         return SPL_TOKEN_BITWISE_RIGHT_SHIFT;
     } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG("<<="))) {
-        return SPL_TOKEN_ASSIGNMENT;
+        return SPL_TOKEN_BITWISE_LEFT_SHIFT_EQUALS;
     } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG(">>="))) {
-        return SPL_TOKEN_ASSIGNMENT;
+        return SPL_TOKEN_BITWISE_RIGHT_SHIFT_EQUALS;
     } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG("---"))) {
         return SPL_TOKEN_UNINITIALIZED;
     } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG("[..]"))) {
