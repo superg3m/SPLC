@@ -33,13 +33,13 @@ internal JSON* ast_to_json_helper(JSON* json, ASTNode* node, CJ_Arena* arena) {
     if (node->type == AST_NODE_EXPRESSION) {
         Expression* expr = node->expression;
         if (expr->type == EXPRESSION_TYPE_STRING) {
-
+            return JSON_STRING_VIEW(arena, TO_CJ_SV(expr->str->name));
         } else if (expr->type == EXPRESSION_TYPE_INTEGER) {
-
+            return JSON_INT(arena, expr->integer->value);
         } else if (expr->type == EXPRESSION_TYPE_FLOAT) {
-
+            return JSON_FLOAT(arena, expr->floating->value);
         } else if (expr->type == EXPRESSION_TYPE_BOOLEAN) {
-
+            return JSON_BOOL(arena, expr->boolean->value);
         } else if (expr->type == EXPRESSION_TYPE_IDENTIFER) {
             JSON* nested = cj_create(arena);
             cj_push(nested, "name", TO_CJ_SV(expr->identifier->name));
@@ -50,32 +50,34 @@ internal JSON* ast_to_json_helper(JSON* json, ASTNode* node, CJ_Arena* arena) {
             
             JSON* nested = cj_create(arena);
             cj_push(nested, "op", TO_CJ_SV(operation.name));
+            cj_push(nested, "operand", ast_to_json_helper(json, ast_node_create(AST_NODE_EXPRESSION, operand), arena));
 
-            if (is_primitive_type(expr->unary->operand)) {
-                if (operand->type == EXPRESSION_TYPE_STRING) {
-                    cj_push(nested, "operand", TO_CJ_SV(operand->str->name));
-                } else if (operand->type == EXPRESSION_TYPE_INTEGER) {
-                    cj_push(nested, "operand", operand->integer->value);
-                } else if (operand->type == EXPRESSION_TYPE_FLOAT) {
-                    cj_push(nested, "operand", operand->floating->value);
-                } else if (operand->type == EXPRESSION_TYPE_BOOLEAN) {
-                    cj_push(nested, "operand", (Boolean)operand->boolean->value);
-                }
-            } else {
-
-                cj_push(nested, "operand", TO_CJ_SV(expr->unary->operation.name));
-            }
-
-
-
-
-            cj_push(json, "Unary", nested);
+            cj_push(json, "UnaryOp", nested);
         } else if (expr->type == EXPRESSION_TYPE_BINARY_OPERATION) {
+            SPL_Token operation = expr->unary->operation;
+            Expression* left = expr->binary->left;
+            Expression* right = expr->binary->right;
+            
+            JSON* nested = cj_create(arena);
+            cj_push(nested, "op", TO_CJ_SV(operation.name));
+            cj_push(nested, "left", ast_to_json_helper(json, ast_node_create(AST_NODE_EXPRESSION, left), arena));
+            cj_push(nested, "right", ast_to_json_helper(json, ast_node_create(AST_NODE_EXPRESSION, right), arena));
 
+            cj_push(json, "BinaryOp", nested);
         } else if (expr->type == EXPRESSION_TYPE_LOGICAL_OPERATION) {
+            SPL_Token operation = expr->unary->operation;
+            Expression* left = expr->binary->left;
+            Expression* right = expr->binary->right;
+            
+            JSON* nested = cj_create(arena);
+            cj_push(nested, "op", TO_CJ_SV(operation.name));
+            cj_push(nested, "left", ast_to_json_helper(json, ast_node_create(AST_NODE_EXPRESSION, left), arena));
+            cj_push(nested, "right", ast_to_json_helper(json, ast_node_create(AST_NODE_EXPRESSION, right), arena));
 
+            cj_push(json, "LogicalOp", nested);
         } else if (expr->type == EXPRESSION_TYPE_GROUPING) {
-
+            Expression* inner_expression = expr->grouping->value;
+            cj_push(json, "Grouping", ast_to_json_helper(json, ast_node_create(AST_NODE_EXPRESSION, inner_expression), arena));
         }
     } 
 
