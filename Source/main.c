@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
 	}
 
 	CKG_LOG_PRINT("Parser:\n");
-	parse(token_stream);
+	ast_pretty_print(parse(token_stream));
 
 	ckg_vector_free(token_stream);
     ckg_arena_free(&arena);
