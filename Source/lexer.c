@@ -20,7 +20,7 @@ internal void lexer_consume_next_char(Lexer* lexer) {
 }
 
 internal bool is_whitespace(char c) {
-    return c == ' ' || c == '\t' || c == '\n';
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
 
 internal bool lexer_consume_whitespace(Lexer* lexer) {
@@ -45,8 +45,8 @@ CKG_StringView lexer_get_scratch_buffer(Lexer* lexer) {
 
 void lexer_report_error(Lexer* lexer, char* msg) {
     CKG_StringView scratch = lexer_get_scratch_buffer(lexer);
-    printf("String: %.*s", (int)scratch.length, scratch.data);
-    printf("[LEXER ERROR] line: %d | %s", lexer->line, msg);
+    CKG_LOG_ERROR("String: %.*s\n", (int)scratch.length, scratch.data);
+    CKG_LOG_ERROR("[LEXER ERROR] line: %d | %s", lexer->line, msg);
     ckg_assert(false);
 }
 
@@ -82,7 +82,7 @@ void lexer_consume_digit_literal(Lexer* lexer) {
 void lexer_consume_string_literal(Lexer* lexer) {
     while (lexer_peek_nth_char(lexer, 0) != '\"') {
         if (lexer_is_EOF(lexer)) {
-            lexer_report_error(lexer, "String literal doesn't have a closing double quote!");
+            lexer_report_error(lexer, "String literal doesn't have a closing double quote!\n");
         }
         
         lexer_consume_next_char(lexer);
@@ -94,12 +94,12 @@ void lexer_consume_string_literal(Lexer* lexer) {
 
 void lexer_consume_character_literal(Lexer* lexer) {
     if (lexer_consume_on_match(lexer, '\'')) {
-        lexer_report_error(lexer, "character literal doesn't have any ascii data in between");
+        lexer_report_error(lexer, "character literal doesn't have any ascii data in between\n");
     }
 
     while (lexer_peek_nth_char(lexer, 0) != '\'') {
         if (lexer_is_EOF(lexer)) {
-            lexer_report_error(lexer, "String literal doesn't have a closing double quote!");
+            lexer_report_error(lexer, "String literal doesn't have a closing double quote!\n");
         }
         
         lexer_consume_next_char(lexer);
@@ -126,12 +126,11 @@ internal bool lexer_consume_literal(Lexer* lexer) {
 
 
 bool lexer_try_consume_word(Lexer* lexer) {
-    if (ckg_char_is_alpha(lexer->c)) {
+    if (!ckg_char_is_alpha(lexer->c)) {
         return false;
     }
 
-
-    while (ckg_char_is_alpha_numeric(lexer_peek_nth_char(lexer, 0)) || lexer_peek_nth_char(lexer, '_')) {
+    while (ckg_char_is_alpha_numeric(lexer_peek_nth_char(lexer, 0)) || lexer_peek_nth_char(lexer, 0) == '_') {
         if (lexer_is_EOF(lexer)) {
             break;
         }
@@ -143,7 +142,7 @@ bool lexer_try_consume_word(Lexer* lexer) {
 }
 
 bool lexer_consume_word(Lexer* lexer) {
-    if (lexer_try_consume_word(lexer)) {
+    if (!lexer_try_consume_word(lexer)) {
         return false;
     }
 
@@ -174,7 +173,7 @@ internal bool lexer_consume_syntax(Lexer* lexer) {
         } else if (lexer_consume_on_match(lexer, '*')) {
             while (!(lexer_peek_nth_char(lexer, 0) == '*' && lexer_peek_nth_char(lexer, 1) == '/')) {
                 if (lexer_is_EOF(lexer)) {
-                    lexer_report_error(lexer, "Multiline comment doesn't terminate");
+                    lexer_report_error(lexer, "Multiline comment doesn't terminate\n");
                 }
                 lexer_consume_next_char(lexer);
             }
@@ -237,7 +236,7 @@ internal void lexer_consume_next_token(Lexer* lexer) {
     else if (lexer_consume_word(lexer)) {}
     else if (lexer_consume_syntax(lexer)) {}
     else {
-        lexer_report_error(lexer, "Illegal token found");
+        lexer_report_error(lexer, "Illegal token found\n");
     }
 }
 
@@ -249,7 +248,7 @@ SPL_Token* lexer_consume_token_stream(Lexer* lexer, char* source, u64 source_len
     lexer->c = '\0';
 
     lexer->source = ckg_sv_create(source, source_length);
-    while (lexer_is_EOF(lexer)) {
+    while (!lexer_is_EOF(lexer)) {
         lexer_consume_next_token(lexer);
     }
 

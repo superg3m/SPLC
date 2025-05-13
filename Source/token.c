@@ -1,7 +1,7 @@
 #include <token.h>
 
 void token_print(SPL_Token token) {
-    CKG_LOG_PRINT("%s(%s) | line: %d", token_strings[token.type], token.name, token.line);
+    CKG_LOG_PRINT("%s(%.*s) | line: %d\n", token_strings[token.type], (int)token.name.length, token.name.data, token.line);
 }
 
 SPL_TokenType token_get_keyword(char* str, u64 str_length) {

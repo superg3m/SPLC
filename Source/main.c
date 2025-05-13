@@ -1,6 +1,6 @@
 #include <lexer.h>
 
-#define TOTAL_MEMORY_SIZE KiloBytes(30)
+#define TOTAL_MEMORY_SIZE KiloBytes(60)
 void* custom_alloc_callback(CKG_Allocator* allocator, size_t allocation_size) {
 	CKG_Arena* arena = (CKG_Arena*)allocator->ctx;
 	return ckg_arena_push_custom(arena, allocation_size);
@@ -25,7 +25,6 @@ int main(int argc, char** argv) {
 	char* file_name = argv[1];
 	u64 source_length = 0;
 	CKG_Error file_err = CKG_ERROR_SUCCESS;
-	CKG_LOG_ERROR("Can't find file: %s | err: %s\n", file_name, ckg_error_str(file_err));
 	u8* source = ckg_io_read_entire_file(file_name, &source_length, &file_err);
 	if (file_err != CKG_ERROR_SUCCESS) {
 		CKG_LOG_ERROR("Can't find file: %s | err: %s\n", file_name, ckg_error_str(file_err));
@@ -34,7 +33,10 @@ int main(int argc, char** argv) {
 
 	Lexer lexer = lexer_create();
 	SPL_Token* token_stream = lexer_consume_token_stream(&lexer, source, source_length);
-
+	for (int i = 0; i < ckg_vector_count(token_stream); i++) {
+		SPL_Token token = token_stream[i];
+		token_print(token);
+	}
 
 	ckg_vector_free(token_stream);
     ckg_arena_free(&arena);
