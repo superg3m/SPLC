@@ -1,78 +1,87 @@
 #include <expression.h>
 
-StringExpression* string_expression_create(CKG_StringView name, int line) {
-    StringExpression* ret = ckg_alloc(sizeof(StringExpression));
-    ret->name = name;
-    ret->line = line;
+Expression* string_expression_create(CKG_StringView name, int line) {
+    Expression* ret = ckg_alloc(sizeof(Expression));
+    ret->type = EXPRESSION_TYPE_STRING;
+    ret->str->name = name;
+    ret->str->line = line;
 
     return ret;
 }
 
-IntegerExpression* integer_expression_create(int value, int line) {
-    IntegerExpression* ret = ckg_alloc(sizeof(IntegerExpression));
-    ret->value = value;
-    ret->line = line;
+Expression* integer_expression_create(int value, int line) {
+    Expression* ret = ckg_alloc(sizeof(Expression));
+    ret->type = EXPRESSION_TYPE_INTEGER;
+    ret->integer->value = value;
+    ret->integer->line = line;
 
     return ret;
 }
 
-FloatExpression* float_expression_create(float value, int line) {
-    FloatExpression* ret = ckg_alloc(sizeof(FloatExpression));
-    ret->value = value;
-    ret->line = line;
+Expression* float_expression_create(float value, int line) {
+    Expression* ret = ckg_alloc(sizeof(Expression));
+    ret->type = EXPRESSION_TYPE_FLOAT;
+    ret->floating->value = value;
+    ret->floating->line = line;
 
     return ret;
 }
 
-BoolExpression* bool_expression_create(bool value, int line) {
-    BoolExpression* ret = ckg_alloc(sizeof(BoolExpression));
-    ret->value = value;
-    ret->line = line;
+Expression* bool_expression_create(bool value, int line) {
+    Expression* ret = ckg_alloc(sizeof(Expression));
+    ret->type = EXPRESSION_TYPE_BOOLEAN;
+    ret->boolean->value = value;
+    ret->boolean->line = line;
 
     return ret;
 }
 
-IdentifierExpression* identifier_expression_create(CKG_StringView name, int line) {
-    IdentifierExpression* ret = ckg_alloc(sizeof(IdentifierExpression));
-    ret->name = name;
-    ret->line = line;
+Expression* identifier_expression_create(CKG_StringView name, int line) {
+    Expression* ret = ckg_alloc(sizeof(Expression));
+    ret->type = EXPRESSION_TYPE_IDENTIFER;
+    ret->identifier->name = name;
+    ret->identifier->line = line;
 
     return ret;
 }
 
-UnaryOperationExpression* unary_expression_create(SPL_Token operation, Expression* operand, int line) {
-    UnaryOperationExpression* ret = ckg_alloc(sizeof(UnaryOperationExpression));
-    ret->operation = operation;
-    ret->operand = operand;
-    ret->line = line;
+Expression* unary_expression_create(SPL_Token operation, Expression* operand, int line) {
+    Expression* ret = ckg_alloc(sizeof(Expression));
+    ret->type = EXPRESSION_TYPE_UNARY_OPERATION;
+    ret->unary->operation = operation;
+    ret->unary->operand = operand;
+    ret->unary->line = line;
 
     return ret;
 }
 
-BinaryOperationExpression* binary_expression_create(SPL_Token operation, Expression* left, Expression* right, int line) {
-    BinaryOperationExpression* ret = ckg_alloc(sizeof(BinaryOperationExpression));
-    ret->operation = operation;
-    ret->left = left;
-    ret->right = right;
-    ret->line = line;
+Expression* binary_expression_create(SPL_Token operation, Expression* left, Expression* right, int line) {
+    Expression* ret = ckg_alloc(sizeof(Expression));
+    ret->type = EXPRESSION_TYPE_BINARY_OPERATION;
+    ret->binary->operation = operation;
+    ret->binary->left = left;
+    ret->binary->right = right;
+    ret->binary->line = line;
 
     return ret;
 }
 
-LogicalOperationExpression* logical_expression_create(SPL_Token operation, Expression* left, Expression* right, int line) {
-    LogicalOperationExpression* ret = ckg_alloc(sizeof(LogicalOperationExpression));
-    ret->operation = operation;
-    ret->left = left;
-    ret->right = right;
-    ret->line = line;
+Expression* logical_expression_create(SPL_Token operation, Expression* left, Expression* right, int line) {
+    Expression* ret = ckg_alloc(sizeof(Expression));
+    ret->type = EXPRESSION_TYPE_LOGICAL_OPERATION;
+    ret->logical->operation = operation;
+    ret->logical->left = left;
+    ret->logical->right = right;
+    ret->logical->line = line;
 
     return ret;
 }
 
-GroupingExpression* grouping_expression_create(Expression* value, int line) {
-    GroupingExpression* ret = ckg_alloc(sizeof(GroupingExpression));
-    ret->value = value;
-    ret->line = line;
+Expression* grouping_expression_create(Expression* value, int line) {
+    Expression* ret = ckg_alloc(sizeof(Expression));
+    ret->type = EXPRESSION_TYPE_GROUPING;
+    ret->grouping->value = value;
+    ret->grouping->line = line;
 
     return ret;
 }

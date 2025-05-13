@@ -1,4 +1,5 @@
 #include <ast.h>
+#include <ckg.h>
 
 ASTNode* ast_node_create(AST_NodeType type, void* node) {
     ASTNode* ret = ckg_alloc(sizeof(ASTNode));

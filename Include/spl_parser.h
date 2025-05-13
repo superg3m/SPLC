@@ -17,5 +17,5 @@ def parse(self):
 */
 
 ASTNode* parse(Parser* parser) {
-    ASTNode* ast = parser_expression_parse(parser);
+    ASTNode* ast = parse_expression(parser);
 }

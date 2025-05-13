@@ -1,6 +1,8 @@
 #pragma once
 #include <token.h>
 
+typedef struct Expression Expression;
+
 typedef struct StringExpression {
     CKG_StringView name;
     int line;
@@ -52,15 +54,15 @@ typedef struct GroupingExpression {
 } GroupingExpression;
 
 typedef enum ExpressionType {
-    STRING,
-    INTEGER,
-    FLOAT,
-    BOOL,
-    IDENTIFER,
-    UNARY_OPERATION,
-    BINARY_OPERATION,
-    LOGICAL_OPERATION,
-    GROUPING,
+    EXPRESSION_TYPE_STRING,
+    EXPRESSION_TYPE_INTEGER,
+    EXPRESSION_TYPE_FLOAT,
+    EXPRESSION_TYPE_BOOLEAN,
+    EXPRESSION_TYPE_IDENTIFER,
+    EXPRESSION_TYPE_UNARY_OPERATION,
+    EXPRESSION_TYPE_BINARY_OPERATION,
+    EXPRESSION_TYPE_LOGICAL_OPERATION,
+    EXPRESSION_TYPE_GROUPING
 } ExpressionType;
 
 typedef struct Expression {
@@ -78,12 +80,12 @@ typedef struct Expression {
     };
 } Expression;
 
-StringExpression* string_expression_create(CKG_StringView name, int line);
-IntegerExpression* integer_expression_create(int value, int line);
-FloatExpression* float_expression_create(float value, int line);
-BoolExpression* bool_expression_create(bool value, int line);
-IdentifierExpression* identifier_expression_create(CKG_StringView name, int line);
-UnaryOperationExpression* unary_expression_create(SPL_Token operation, Expression* operand, int line);
-BinaryOperationExpression* binary_expression_create(SPL_Token operation, Expression* left, Expression* right, int line);
-LogicalOperationExpression* logical_expression_create(SPL_Token operation, Expression* left, Expression* right, int line);
-GroupingExpression* grouping_expression_create(Expression* value, int line);
+Expression* string_expression_create(CKG_StringView name, int line);
+Expression* integer_expression_create(int value, int line);
+Expression* float_expression_create(float value, int line);
+Expression* bool_expression_create(bool value, int line);
+Expression* identifier_expression_create(CKG_StringView name, int line);
+Expression* unary_expression_create(SPL_Token operation, Expression* operand, int line);
+Expression* binary_expression_create(SPL_Token operation, Expression* left, Expression* right, int line);
+Expression* logical_expression_create(SPL_Token operation, Expression* left, Expression* right, int line);
+Expression* grouping_expression_create(Expression* value, int line);
