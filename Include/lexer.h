@@ -12,4 +12,5 @@ typedef struct Lexer {
     char c;
 } Lexer;
 
-SPL_Token* consume_token_stream();
+Lexer lexer_create();
+SPL_Token* lexer_consume_token_stream(Lexer* lexer, char* source, u64 source_length);

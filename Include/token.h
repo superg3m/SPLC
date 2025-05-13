@@ -63,7 +63,7 @@ typedef enum SPL_TokenType {
     SPL_TOKEN_COUNT
 } SPL_TokenType;
 
-char* token_strings[] = {
+internal char* token_strings[] = {
     stringify(SPL_TOKEN_ILLEGAL_TOKEN),
     stringify(SPL_TOKEN_EOF),
     stringify(SPL_TOKEN_NOT),
@@ -125,9 +125,11 @@ char* token_strings[] = {
 
 typedef struct SPL_Token {
     SPL_TokenType type;
-    char* name;
+    CKG_StringView name;
     u32 line;
 } SPL_Token;
+
+#define SPL_TOKEN_CREATE(token_type, name, line) (SPL_Token){(token_type), (name), (line)}
 
 void token_print(SPL_Token token);
 SPL_TokenType token_get_keyword(char* str, u64 str_length);
