@@ -9,6 +9,13 @@ typedef struct Parser {
     int current;
 } Parser;
 
+/*
+def parse(self):
+    ast: list[Expression] = []
+    while self.current < (len(self.tokens) - 1):
+        ast.append(self.expression())
+*/
+
 ASTNode* parse(Parser* parser) {
     ASTNode* ast = parser_expression_parse(parser);
 }
