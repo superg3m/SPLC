@@ -16,6 +16,13 @@ ASTNode* ast_node_create(AST_NodeType type, void* node) {
     return ret;
 }
 
+Program* program_create(Statement** statements) {
+    Program* ret = ckg_alloc(sizeof(Program));
+    ret->statements = statements;
+
+    return ret;
+}
+
 static bool is_primitive_type(Expression* expr) {
     return expr->type == EXPRESSION_TYPE_STRING ||
            expr->type == EXPRESSION_TYPE_INTEGER ||
@@ -129,21 +136,84 @@ internal JSON* ast_to_json_helper(JSON* root, ASTNode* node, CJ_Arena* arena) {
 
             JSON* nested = cj_create(arena);
             JSON* value_json = cj_create(arena);
-            JSON* if_code_block_json = cj_create(arena);
-            JSON* else_code_block_json = cj_create(arena);
+            JSON* if_code_block_array = cj_array_create(arena);
+            JSON* else_code_block_array = cj_array_create(arena);
+
+            for (int i = 0; i < ckg_vector_count(if_code_block); i++) {
+                JSON* if_statement_json = cj_create(arena);
+                cj_array_push(if_code_block_array, ast_to_json_helper(if_statement_json, ast_node_create(AST_NODE_STATEMENT, (void*)if_code_block[i]), arena));
+            }
+   
+            for (int i = 0; else_code_block && i < ckg_vector_count(else_code_block); i++) {
+                JSON* else_statement_json = cj_create(arena);
+                cj_array_push(if_code_block_array, ast_to_json_helper(else_statement_json, ast_node_create(AST_NODE_STATEMENT, (void*)else_code_block[i]), arena));
+            }
 
             cj_push(nested, "condition", ast_to_json_helper(value_json, ast_node_create(AST_NODE_EXPRESSION, condition), arena));
-            cj_push(nested, "if_code", ast_to_json_helper(if_code_block_json, ast_node_create(AST_NODE_EXPRESSION, if_code_block), arena));
-            cj_push(nested, "else_code", ast_to_json_helper(else_code_block_json, ast_node_create(AST_NODE_EXPRESSION, else_code_block), arena));
+            cj_push(nested, "if_code", if_code_block_array);
+            cj_push(nested, "else_code", else_code_block_array);
             
             cj_push(root, "IfStatement", nested);
 
             return root;
         } else if (stmt->type == STATEMENT_TYPE_WHILE) {
-            //return JSON_FLOAT(arena, expr->floating->value);
+            Expression* condition = stmt->while_statement->value;
+            Statement** while_code_block = stmt->while_statement->while_code_block;
+
+            JSON* nested = cj_create(arena);
+            JSON* value_json = cj_create(arena);
+            JSON* while_code_block_array = cj_array_create(arena);
+
+            for (int i = 0; i < ckg_vector_count(while_code_block); i++) {
+                JSON* while_statement_json = cj_create(arena);
+                cj_array_push(while_code_block_array, ast_to_json_helper(while_statement_json, ast_node_create(AST_NODE_STATEMENT, (void*)while_code_block[i]), arena));
+            }
+
+            cj_push(nested, "condition", ast_to_json_helper(value_json, ast_node_create(AST_NODE_EXPRESSION, condition), arena));
+            cj_push(nested, "while_code", while_code_block_array);
+
+            cj_push(root, "WhileStatement", nested);
+
+            return root;
         } else if (stmt->type == STATEMENT_TYPE_FOR) {
-            //return JSON_FLOAT(arena, expr->floating->value);
+            Statement* initialization = stmt->for_statement->initalization;
+            Expression* condition = stmt->for_statement->condition;
+            Statement* increment = stmt->for_statement->increment;
+            Statement** for_code_block = stmt->for_statement->for_code_block;
+
+            JSON* nested = cj_create(arena);
+            JSON* initialization_json = cj_create(arena);
+            JSON* condition_json = cj_create(arena);
+            JSON* increment_json = cj_create(arena);
+
+            JSON* for_code_block_array = cj_array_create(arena);
+
+            for (int i = 0; i < ckg_vector_count(for_code_block); i++) {
+                JSON* for_statement_json = cj_create(arena);
+                cj_array_push(for_code_block_array, ast_to_json_helper(for_statement_json, ast_node_create(AST_NODE_STATEMENT, (void*)for_code_block[i]), arena));
+            }
+
+            cj_push(nested, "Initialization", ast_to_json_helper(initialization_json, ast_node_create(AST_NODE_STATEMENT, initialization), arena));
+            cj_push(nested, "Condition", ast_to_json_helper(condition_json, ast_node_create(AST_NODE_EXPRESSION, condition), arena));
+            cj_push(nested, "Increment", ast_to_json_helper(increment_json, ast_node_create(AST_NODE_STATEMENT, increment), arena));
+            cj_push(nested, "for_code", for_code_block_array);
+
+            cj_push(root, "ForStatement", nested);
+
+            return root;
         }
+    } else if (node->type == AST_NODE_PROGRAM) {
+        Statement** statements = node->program->statements;
+
+        JSON* nested_array = cj_array_create(arena);
+        for (int i = 0; i < ckg_vector_count(statements); i++) {
+            JSON* statement_json = cj_create(arena);
+            cj_array_push(nested_array, ast_to_json_helper(statement_json, ast_node_create(AST_NODE_STATEMENT, statements[i]), arena));
+        }
+        
+        cj_push(root, "Program", nested_array);
+        
+        return root;
     }
 
     return NULL;
@@ -159,7 +229,8 @@ void ast_pretty_print(ASTNode* ast) {
     cj_set_context_indent(indent);
     CJ_Arena* arena = cj_arena_create(0);
 
-    char* str = cj_to_string(ast_to_json(ast, arena));
+    JSON* json = ast_to_json(ast, arena);
+    char* str = cj_to_string(json);
     printf("%s\n", str);
 
     cj_arena_free(arena);

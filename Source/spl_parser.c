@@ -171,8 +171,9 @@ Statement** parse_scope(Parser* parser) {
     while (parser_peek_nth_token(parser, 0).type != SPL_TOKEN_RIGHT_CURLY) {
         if (parser->current >= ckg_vector_count(parser->tokens) - 1) {
             parser_report_error(parser, "Missing closing brace\n");
-            ckg_vector_push(code_block, parse_statement(parser, true));
         }
+
+        ckg_vector_push(code_block, parse_statement(parser, true));
     }
 
     parser_expect(parser, SPL_TOKEN_RIGHT_CURLY);
@@ -245,8 +246,8 @@ static Statement* parse_assignment_statement(Parser* parser, bool requires_semi_
 Statement* parse_statement(Parser* parser, bool requires_semi_colon) {
     SPL_TokenType next_token_type = parser_peek_nth_token(parser, 0).type;
 
-    if (next_token_type == SPL_TOKEN_ASSIGNMENT) {
-        return parse_assignment_statement(parser, requires_semi_colon);
+    if (next_token_type == SPL_TOKEN_PRINT) {
+        return parse_print_statement(parser);
     } else if (next_token_type == SPL_TOKEN_IF) {
         return parse_if_statement(parser);
     } else if (next_token_type == SPL_TOKEN_FOR) {
@@ -263,10 +264,19 @@ Statement* parse_statement(Parser* parser, bool requires_semi_colon) {
     return NULL;
 }
 
+Program* program(Parser* parser) {
+    Statement** statements = NULLPTR;
+    while (parser->current < ckg_vector_count(parser->tokens) - 1) {
+        ckg_vector_push(statements, parse_statement(parser, true));
+    }
+
+    return program_create(statements);
+}
+
 ASTNode* parse(SPL_Token* token_stream) {
     Parser parser = {0};
     parser.tokens = token_stream;
-    ASTNode* ast = ast_node_create(AST_NODE_STATEMENT, (void*)parse_statement(&parser, true));
+    ASTNode* ast = ast_node_create(AST_NODE_PROGRAM, (void*)program(&parser));
 
     return ast;
 }
