@@ -27,7 +27,7 @@ pc: ProjectConfig = ProjectConfig(
             "cj"
         )
     ],
-    project_debug_with_visual_studio = True,
+    project_debug_with_visual_studio = False,
     project_rebuild_project_dependencies = False,
     project_executable_names  = ["splc.exe ../../SPL_Source/test.spl"]
 )

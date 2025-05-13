@@ -3,6 +3,7 @@
 Expression* string_expression_create(CKG_StringView name, int line) {
     Expression* ret = ckg_alloc(sizeof(Expression));
     ret->type = EXPRESSION_TYPE_STRING;
+    ret->str = ckg_alloc(sizeof(StringExpression));
     ret->str->name = name;
     ret->str->line = line;
 

@@ -16,4 +16,4 @@ def parse(self):
         ast.append(self.expression())
 */
 
-ASTNode* parse(Parser* parser);
+ASTNode* parse(SPL_Token* token_stream);

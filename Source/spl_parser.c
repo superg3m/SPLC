@@ -161,8 +161,10 @@ internal Expression* parse_expression(Parser* parser) {
     return parse_logical_expression(parser);
 }
 
-ASTNode* parse(Parser* parser) {
-    ASTNode* ast = ast_node_create(AST_NODE_EXPRESSION, (void*)parse_expression(parser));
+ASTNode* parse(SPL_Token* token_stream) {
+    Parser parser = {0};
+    parser.tokens = token_stream;
+    ASTNode* ast = ast_node_create(AST_NODE_EXPRESSION, (void*)parse_expression(&parser));
 
     return ast;
 }
