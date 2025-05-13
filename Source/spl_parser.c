@@ -146,7 +146,7 @@ internal Expression* parse_comparison_expression(Parser* parser) {
 // <logical>    ::= <comparison> (("||" | "&&") <comparison>)*
 internal Expression* parse_logical_expression(Parser* parser) {
     Expression* expression = parse_comparison_expression(parser);
-    while (parser->tok.type == SPL_TOKEN_OR || parser->tok.type == SPL_TOKEN_AND) {
+    while (parser_consume_on_match(parser, SPL_TOKEN_OR) || parser_consume_on_match(parser, SPL_TOKEN_AND)) {
         SPL_Token op = parser_previous_token(parser);
         Expression* right = parse_comparison_expression(parser);
 

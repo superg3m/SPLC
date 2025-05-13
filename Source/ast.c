@@ -27,7 +27,7 @@ static const char* bool_to_string(bool value) {
     return value ? "true" : "false";
 }
 
-internal JSON* ast_to_json_helper(JSON* json, ASTNode* node, CJ_Arena* arena) {
+internal JSON* ast_to_json_helper(JSON* root, ASTNode* node, CJ_Arena* arena) {
     #define TO_CJ_SV(sv) (CJ_StringView){sv.data, 0, sv.length}
 
     if (node->type == AST_NODE_EXPRESSION) {
@@ -43,41 +43,61 @@ internal JSON* ast_to_json_helper(JSON* json, ASTNode* node, CJ_Arena* arena) {
         } else if (expr->type == EXPRESSION_TYPE_IDENTIFER) {
             JSON* nested = cj_create(arena);
             cj_push(nested, "name", TO_CJ_SV(expr->identifier->name));
-            cj_push(json, "Identifier", nested);
+            cj_push(root, "Identifier", nested);
+
+            return root;
         } else if (expr->type == EXPRESSION_TYPE_UNARY_OPERATION) {
             SPL_Token operation = expr->unary->operation;
             Expression* operand = expr->unary->operand;
             
             JSON* nested = cj_create(arena);
-            cj_push(nested, "op", TO_CJ_SV(operation.name));
-            cj_push(nested, "operand", ast_to_json_helper(json, ast_node_create(AST_NODE_EXPRESSION, operand), arena));
+            JSON* operand_json = cj_create(arena);
+            ast_to_json_helper(operand_json, ast_node_create(AST_NODE_EXPRESSION, operand), arena);
 
-            cj_push(json, "UnaryOp", nested);
+            cj_push(nested, "op", TO_CJ_SV(operation.name));
+            cj_push(nested, "operand", operand_json);
+            
+            cj_push(root, "UnaryOp", nested);
+
+            return root;
         } else if (expr->type == EXPRESSION_TYPE_BINARY_OPERATION) {
-            SPL_Token operation = expr->unary->operation;
+            SPL_Token operation = expr->binary->operation;
             Expression* left = expr->binary->left;
             Expression* right = expr->binary->right;
             
             JSON* nested = cj_create(arena);
-            cj_push(nested, "op", TO_CJ_SV(operation.name));
-            cj_push(nested, "left", ast_to_json_helper(json, ast_node_create(AST_NODE_EXPRESSION, left), arena));
-            cj_push(nested, "right", ast_to_json_helper(json, ast_node_create(AST_NODE_EXPRESSION, right), arena));
+            JSON* left_json = cj_create(arena);
+            JSON* right_json = cj_create(arena);
 
-            cj_push(json, "BinaryOp", nested);
+            cj_push(nested, "op", TO_CJ_SV(operation.name));
+            cj_push(nested, "left", ast_to_json_helper(left_json, ast_node_create(AST_NODE_EXPRESSION, left), arena));
+            cj_push(nested, "right", ast_to_json_helper(right_json, ast_node_create(AST_NODE_EXPRESSION, right), arena));
+
+            cj_push(root, "BinaryOp", nested);
+
+            return root;
         } else if (expr->type == EXPRESSION_TYPE_LOGICAL_OPERATION) {
-            SPL_Token operation = expr->unary->operation;
-            Expression* left = expr->binary->left;
-            Expression* right = expr->binary->right;
+            SPL_Token operation = expr->logical->operation;
+            Expression* left = expr->logical->left;
+            Expression* right = expr->logical->right;
             
             JSON* nested = cj_create(arena);
+            JSON* left_json = cj_create(arena);
+            JSON* right_json = cj_create(arena);
+            
             cj_push(nested, "op", TO_CJ_SV(operation.name));
-            cj_push(nested, "left", ast_to_json_helper(json, ast_node_create(AST_NODE_EXPRESSION, left), arena));
-            cj_push(nested, "right", ast_to_json_helper(json, ast_node_create(AST_NODE_EXPRESSION, right), arena));
+            cj_push(nested, "left", ast_to_json_helper(left_json, ast_node_create(AST_NODE_EXPRESSION, left), arena));
+            cj_push(nested, "right", ast_to_json_helper(right_json, ast_node_create(AST_NODE_EXPRESSION, right), arena));
+            
+            cj_push(root, "LogicalOp", nested);
 
-            cj_push(json, "LogicalOp", nested);
+            return root;
         } else if (expr->type == EXPRESSION_TYPE_GROUPING) {
             Expression* inner_expression = expr->grouping->value;
-            cj_push(json, "Grouping", ast_to_json_helper(json, ast_node_create(AST_NODE_EXPRESSION, inner_expression), arena));
+            JSON* grouping_json = ast_to_json_helper(root, ast_node_create(AST_NODE_EXPRESSION, inner_expression), arena);
+            cj_push(root, "Grouping", grouping_json);
+
+            return root;
         }
     } 
 
@@ -86,9 +106,7 @@ internal JSON* ast_to_json_helper(JSON* json, ASTNode* node, CJ_Arena* arena) {
 
 internal JSON* ast_to_json(ASTNode* ast, CJ_Arena* arena) {
     JSON* root = cj_create(arena);
-    ast_to_json_helper(root, ast, arena);
-
-    return root;
+    return ast_to_json_helper(root, ast, arena);;
 }
 
 void ast_pretty_print(ASTNode* ast) {
