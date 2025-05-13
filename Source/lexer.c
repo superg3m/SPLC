@@ -70,6 +70,12 @@ void lexer_add_token(Lexer* lexer, SPL_TokenType token_type) {
     } else {
         ckg_vector_push(lexer->tokens, SPL_TOKEN_CREATE_CUSTOM(token_type, name, lexer->line));
     }
+
+    /*
+    else if (token_type == SPL_TOKEN_MODULUS) {
+        ckg_vector_push(lexer->tokens, SPL_TOKEN_CREATE_CUSTOM(token_type, CKG_SV_LIT("%%"), lexer->line));
+    } 
+    */
 }
 
 void lexer_consume_digit_literal(Lexer* lexer) {

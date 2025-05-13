@@ -245,12 +245,12 @@ static Statement* parse_assignment_statement(Parser* parser, bool requires_semi_
 Statement* parse_statement(Parser* parser, bool requires_semi_colon) {
     SPL_TokenType next_token_type = parser_peek_nth_token(parser, 0).type;
 
-    if (next_token_type == SPL_TOKEN_IF) {
+    printf("%s\n", "{\n    \"AssignmentStatement\": {\n        \"left\": {\n            \"Identifier\": {\n                \"name\": \"x\"\n            }\n        },\n        \"right\": {\n            \"BinaryOp\": {\n                \"op\": \"\",\n                \"left\": {\n                    \"Groupin");
+
+    if (next_token_type == SPL_TOKEN_ASSIGNMENT) {
+        return parse_assignment_statement(parser, requires_semi_colon);
+    } else if (next_token_type == SPL_TOKEN_IF) {
         return parse_if_statement(parser);
-    } else if (next_token_type == SPL_TOKEN_WHILE) {
-        return parse_while_statement(parser);
-    } else if (next_token_type == SPL_TOKEN_PRINT) {
-        return parse_print_statement(parser);
     } else if (next_token_type == SPL_TOKEN_FOR) {
         return parse_for_statement(parser);
     } else if (next_token_type == SPL_TOKEN_WHILE) {

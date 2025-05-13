@@ -64,7 +64,7 @@ typedef enum SPL_TokenType {
     SPL_TOKEN_COUNT
 } SPL_TokenType;
 
-internal char* token_strings[] = {
+internal char* token_strings[SPL_TOKEN_COUNT] = {
     stringify(SPL_TOKEN_ILLEGAL_TOKEN),
     stringify(SPL_TOKEN_EOF),
     stringify(SPL_TOKEN_NOT),

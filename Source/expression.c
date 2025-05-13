@@ -6,6 +6,7 @@ Expression* string_expression_create(CKG_StringView name, int line) {
     ret->str = ckg_alloc(sizeof(StringExpression));
     ret->str->name = name;
     ret->str->line = line;
+    
     return ret;
 }
 
@@ -15,6 +16,7 @@ Expression* integer_expression_create(int value, int line) {
     ret->integer = ckg_alloc(sizeof(IntegerExpression));
     ret->integer->value = value;
     ret->integer->line = line;
+    
     return ret;
 }
 
@@ -24,6 +26,7 @@ Expression* float_expression_create(double value, int line) {
     ret->floating = ckg_alloc(sizeof(FloatExpression));
     ret->floating->value = value;
     ret->floating->line = line;
+    
     return ret;
 }
 
@@ -33,6 +36,7 @@ Expression* bool_expression_create(bool value, int line) {
     ret->boolean = ckg_alloc(sizeof(BoolExpression));
     ret->boolean->value = value;
     ret->boolean->line = line;
+    
     return ret;
 }
 
@@ -42,6 +46,7 @@ Expression* identifier_expression_create(CKG_StringView name, int line) {
     ret->identifier = ckg_alloc(sizeof(IdentifierExpression));
     ret->identifier->name = name;
     ret->identifier->line = line;
+    
     return ret;
 }
 
@@ -52,6 +57,7 @@ Expression* unary_expression_create(SPL_Token operation, Expression* operand, in
     ret->unary->operation = operation;
     ret->unary->operand = operand;
     ret->unary->line = line;
+    
     return ret;
 }
 
@@ -63,6 +69,7 @@ Expression* binary_expression_create(SPL_Token operation, Expression* left, Expr
     ret->binary->left = left;
     ret->binary->right = right;
     ret->binary->line = line;
+
     return ret;
 }
 
@@ -74,6 +81,7 @@ Expression* logical_expression_create(SPL_Token operation, Expression* left, Exp
     ret->logical->left = left;
     ret->logical->right = right;
     ret->logical->line = line;
+
     return ret;
 }
 
@@ -83,5 +91,6 @@ Expression* grouping_expression_create(Expression* value, int line) {
     ret->grouping = ckg_alloc(sizeof(GroupingExpression));
     ret->grouping->value = value;
     ret->grouping->line = line;
+    
     return ret;
 }
