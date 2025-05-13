@@ -1,5 +1,0 @@
-// Actually effects the C codegen
-
-STRUCT_CODE_GEN_TYPEOF    // @typeof(x)
-STRUCT_CODE_GEN_INSERT_IF // @insert_if(condition)
-no_self                   // @no_self

@@ -1,5 +1,0 @@
-// <Expression> ::= <Term>
-// <Term>       ::= <Factor> (('+'|'-') <Factor>)*
-// <Factor>     ::= <Unary> (('*'|'/') <Unary>)*
-// <Unary>      ::= ('+'|'-') <Primary> | <Primary>
-// <Primary>    ::= <integer> | <float> | '(' <Expression> ')'

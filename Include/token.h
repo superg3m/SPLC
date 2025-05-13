@@ -1,12 +1,15 @@
 #pragma once
-#include <ckit.h>
+
+#include <ckg.h>
 
 typedef enum SPL_TokenType {
     SPL_TOKEN_ILLEGAL_TOKEN,
     SPL_TOKEN_EOF,
     SPL_TOKEN_NOT,                        // "!"
+    SPL_TOKEN_BITWISE_NOT,                // "~"
     SPL_TOKEN_GENERIC,                    // "$"
-    SPL_TOKEN_BITWISE_AND,                // "&"
+    SPL_TOKEN_AMPERSAND,                  // "&"
+    SPL_TOKEN_BITWISE_OR,                 // "|"
     SPL_TOKEN_LEFT_PAREN,                 // "("
     SPL_TOKEN_RIGHT_PAREN,                // ")"
     SPL_TOKEN_STAR,                       // "*"
@@ -22,7 +25,6 @@ typedef enum SPL_TokenType {
     SPL_TOKEN_LEFT_BRACKET,               // "["
     SPL_TOKEN_RIGHT_BRACKET,              // "]"
     SPL_TOKEN_LEFT_CURLY,                 // "{"
-    SPL_TOKEN_BITWISE_OR,                 // "|"
     SPL_TOKEN_RIGHT_CURLY,                // "}"
     SPL_TOKEN_MODULUS,                    // "%"
     SPL_TOKEN_COLON,                      // ":"
@@ -40,26 +42,16 @@ typedef enum SPL_TokenType {
     SPL_TOKEN_BITWISE_RIGHT_SHIFT,        // ">>"
     SPL_TOKEN_BITWISE_LEFT_SHIFT_EQUALS,  // "<<="
     SPL_TOKEN_BITWISE_RIGHT_SHIFT_EQUALS, // ">>="
-    SPL_TOKEN_NOT_INITIALIZED,            // "---"
+    SPL_TOKEN_UNINITIALIZED,              // "---"
     SPL_TOKEN_DYNAMIC_ARRAY,              // "[..]"
     SPL_TOKEN_AND,                        // "&&"
     SPL_TOKEN_OR,                         // "||"
     SPL_TOKEN_COMMENT,                    // "//"
     SPL_TOKEN_IDENTIFIER,                 // any_word
-    SPL_TOKEN_STRING_LITERAL,             // "TESTING
+    SPL_TOKEN_STRING_LITERAL,             // "TESTING"
     SPL_TOKEN_INTEGER_LITERAL,            // 6
     SPL_TOKEN_FLOAT_LITERAL,              // 2.523
     SPL_TOKEN_CHARACTER_LITERAL,          // 'a'
-    SPL_TOKEN_CODE_GEN,                   // @insert_if()
-    SPL_TOKEN_DIRECTIVE,                  // #include
-    SPL_TOKEN_PRIMITIVE_TYPE,             // u8
-    SPL_TOKEN_STRUCT,                     // struct
-    SPL_TOKEN_STRUCT_INTERFACE,           // struct_interface
-    SPL_TOKEN_STRUCT_IMPL,                // struct_impl
-    SPL_TOKEN_UNION,                      // union
-    SPL_TOKEN_STATIC,                     // static
-    SPL_TOKEN_EXTERN,                     // extern
-    SPL_TOKEN_DEFER,                      // defer
     SPL_TOKEN_IF,                         // if
     SPL_TOKEN_ELSE,                       // else
     SPL_TOKEN_FOR,                        // for
@@ -68,14 +60,76 @@ typedef enum SPL_TokenType {
     SPL_TOKEN_FALSE,                      // false
     SPL_TOKEN_NULL,                       // null
     SPL_TOKEN_RETURN,                     // return
+    SPL_TOKEN_PRINT,                      // print(<Expression>)
     SPL_TOKEN_COUNT
 } SPL_TokenType;
 
+char* token_strings[] = {
+    stringify(SPL_TOKEN_ILLEGAL_TOKEN),
+    stringify(SPL_TOKEN_EOF),
+    stringify(SPL_TOKEN_NOT),
+    stringify(SPL_TOKEN_GENERIC),
+    stringify(SPL_TOKEN_AMPERSAND),
+    stringify(SPL_TOKEN_BITWISE_OR),
+    stringify(SPL_TOKEN_LEFT_PAREN),
+    stringify(SPL_TOKEN_RIGHT_PAREN),
+    stringify(SPL_TOKEN_STAR),
+    stringify(SPL_TOKEN_PLUS),
+    stringify(SPL_TOKEN_COMMA),
+    stringify(SPL_TOKEN_MINUS),
+    stringify(SPL_TOKEN_DOT),
+    stringify(SPL_TOKEN_DIVISION),
+    stringify(SPL_TOKEN_SEMI_COLON),
+    stringify(SPL_TOKEN_LESS_THAN),
+    stringify(SPL_TOKEN_ASSIGNMENT),
+    stringify(SPL_TOKEN_GREATER_THAN),
+    stringify(SPL_TOKEN_LEFT_BRACKET),
+    stringify(SPL_TOKEN_RIGHT_BRACKET),
+    stringify(SPL_TOKEN_LEFT_CURLY),
+    stringify(SPL_TOKEN_RIGHT_CURLY),
+    stringify(SPL_TOKEN_MODULUS),
+    stringify(SPL_TOKEN_COLON),
+    stringify(SPL_TOKEN_INCREMENT),
+    stringify(SPL_TOKEN_DECREMENT),
+    stringify(SPL_TOKEN_EQUALS),
+    stringify(SPL_TOKEN_NOT_EQUALS),
+    stringify(SPL_TOKEN_PLUS_EQUALS),
+    stringify(SPL_TOKEN_MINUS_EQUALS),
+    stringify(SPL_TOKEN_MULTIPLICATION_EQUALS),
+    stringify(SPL_TOKEN_DIVISION_EQUALS),
+    stringify(SPL_TOKEN_GREATER_THAN_EQUALS),
+    stringify(SPL_TOKEN_LESS_THAN_EQUALS),
+    stringify(SPL_TOKEN_BITWISE_LEFT_SHIFT),
+    stringify(SPL_TOKEN_BITWISE_RIGHT_SHIFT),
+    stringify(SPL_TOKEN_BITWISE_LEFT_SHIFT_EQUALS),
+    stringify(SPL_TOKEN_BITWISE_RIGHT_SHIFT_EQUALS),
+    stringify(SPL_TOKEN_UNINITIALIZED),
+    stringify(SPL_TOKEN_DYNAMIC_ARRAY),
+    stringify(SPL_TOKEN_AND),
+    stringify(SPL_TOKEN_OR),
+    stringify(SPL_TOKEN_COMMENT),
+    stringify(SPL_TOKEN_IDENTIFIER),
+    stringify(SPL_TOKEN_STRING_LITERAL),
+    stringify(SPL_TOKEN_INTEGER_LITERAL),
+    stringify(SPL_TOKEN_FLOAT_LITERAL),
+    stringify(SPL_TOKEN_CHARACTER_LITERAL),
+    stringify(SPL_TOKEN_IF),
+    stringify(SPL_TOKEN_ELSE),
+    stringify(SPL_TOKEN_FOR),
+    stringify(SPL_TOKEN_WHILE),
+    stringify(SPL_TOKEN_TRUE),
+    stringify(SPL_TOKEN_FALSE),
+    stringify(SPL_TOKEN_NULL),
+    stringify(SPL_TOKEN_RETURN),
+    stringify(SPL_TOKEN_COUNT)
+};
+
 typedef struct SPL_Token {
-    char *lexeme;
     SPL_TokenType type;
-    u64 line;
+    char* name;
+    u32 line;
 } SPL_Token;
 
-const SPL_Token tokenCreate(SPL_TokenType type, char* lexeme, u64 line);
-const char* tokenTypeToString(SPL_TokenType type);
+void token_print(SPL_Token token);
+SPL_TokenType token_get_keyword(char* str, u64 str_length);
+SPL_TokenType token_get_syntax(char* str, u64 str_length);
