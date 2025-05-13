@@ -8,17 +8,24 @@
 //                      └── Unary (+, -, !, ~, &, *)
 //                           └── Primary (literals, identifiers, etc.)
 
-#define parser_report_error(parser, fmt, ...) \
-CKG_LOG_ERROR("String: %s\n", token_strings[parser_peek_nth_token(parser, 0).type]);               \
-CKG_LOG_ERROR("Error Line: %d | %s", parser_peek_nth_token(parser, 0).line, fmt, ##__VA_ARGS__); \
-ckg_assert(false)                                                                                \
-
 internal SPL_Token parser_peek_nth_token(Parser* parser, int n) {
     if (parser->current + n > ckg_vector_count(parser->tokens) - 1) {
         return SPL_TOKEN_CREATE_CUSTOM(SPL_TOKEN_ILLEGAL_TOKEN, "", -1);
     }
 
     return parser->tokens[parser->current + n];
+}
+
+internal void parser_report_error(Parser* parser, char* fmt, ...) {
+    SPL_Token token = parser_peek_nth_token(parser, 0);
+
+    va_list args;
+    va_start(args, fmt);
+    CKG_LOG_ERROR("String: %s\n", token_strings[token.type]);
+    CKG_LOG_ERROR("Error Line: %d | %s", parser->tok.line, ckg_str_va_sprint(NULLPTR, fmt, args));
+    va_end(args);
+
+    ckg_assert(false);
 }
 
 internal SPL_Token parser_consume_next_token(Parser* parser) {
@@ -237,7 +244,7 @@ static Statement* parse_assignment_statement(Parser* parser, bool requires_semi_
     Expression* right = parse_expression(parser);
 
     if (requires_semi_colon) {
-        parser_consume_on_match(parser, SPL_TOKEN_SEMI_COLON);
+        parser_expect(parser, SPL_TOKEN_SEMI_COLON);
     }
 
     return assignment_statement_create(left, right, parser_previous_token(parser).line);
