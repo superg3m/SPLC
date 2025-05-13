@@ -33,10 +33,13 @@ int main(int argc, char** argv) {
 
 	Lexer lexer = lexer_create();
 	SPL_Token* token_stream = lexer_consume_token_stream(&lexer, source, source_length);
+	CKG_LOG_PRINT("LEXER:\n");
 	for (int i = 0; i < ckg_vector_count(token_stream); i++) {
 		SPL_Token token = token_stream[i];
-		token_print(token);
+		token_print(token, "    ");
 	}
+
+	
 
 	ckg_vector_free(token_stream);
     ckg_arena_free(&arena);

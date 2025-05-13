@@ -67,6 +67,7 @@ internal char* token_strings[] = {
     stringify(SPL_TOKEN_ILLEGAL_TOKEN),
     stringify(SPL_TOKEN_EOF),
     stringify(SPL_TOKEN_NOT),
+    stringify(SPL_TOKEN_BITWISE_NOT),
     stringify(SPL_TOKEN_GENERIC),
     stringify(SPL_TOKEN_AMPERSAND),
     stringify(SPL_TOKEN_BITWISE_OR),
@@ -120,7 +121,7 @@ internal char* token_strings[] = {
     stringify(SPL_TOKEN_FALSE),
     stringify(SPL_TOKEN_NULL),
     stringify(SPL_TOKEN_RETURN),
-    stringify(SPL_TOKEN_COUNT)
+    stringify(SPL_TOKEN_PRINT)
 };
 
 typedef struct SPL_Token {
@@ -131,6 +132,6 @@ typedef struct SPL_Token {
 
 #define SPL_TOKEN_CREATE(token_type, name, line) (SPL_Token){(token_type), (name), (line)}
 
-void token_print(SPL_Token token);
+void token_print(SPL_Token token, char* indent);
 SPL_TokenType token_get_keyword(char* str, u64 str_length);
 SPL_TokenType token_get_syntax(char* str, u64 str_length);
