@@ -62,7 +62,14 @@ bool lexer_consume_on_match(Lexer* lexer, char expected) {
 
 void lexer_add_token(Lexer* lexer, SPL_TokenType token_type) {
     CKG_StringView name = lexer_get_scratch_buffer(lexer);
-    ckg_vector_push(lexer->tokens, SPL_TOKEN_CREATE(token_type, name, lexer->line));
+    if (token_type == SPL_TOKEN_TRUE || token_type == SPL_TOKEN_FALSE ||
+        token_type == SPL_TOKEN_CHARACTER_LITERAL || token_type == SPL_TOKEN_STRING_LITERAL || 
+        token_type == SPL_TOKEN_INTEGER_LITERAL || token_type == SPL_TOKEN_FLOAT_LITERAL
+    ) {
+        ckg_vector_push(lexer->tokens, SPL_TOKEN_CREATE(name, lexer->line));
+    } else {
+        ckg_vector_push(lexer->tokens, SPL_TOKEN_CREATE_CUSTOM(token_type, name, lexer->line));
+    }
 }
 
 void lexer_consume_digit_literal(Lexer* lexer) {
@@ -252,7 +259,7 @@ SPL_Token* lexer_consume_token_stream(Lexer* lexer, char* source, u64 source_len
         lexer_consume_next_token(lexer);
     }
 
-    ckg_vector_push(lexer->tokens, SPL_TOKEN_CREATE(SPL_TOKEN_EOF, CKG_SV_EMPTY(), lexer->line));
+    ckg_vector_push(lexer->tokens, SPL_TOKEN_CREATE_CUSTOM(SPL_TOKEN_EOF, CKG_SV_EMPTY(), lexer->line));
 
     return lexer->tokens;
 }

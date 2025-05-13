@@ -9,6 +9,7 @@ typedef enum SPL_TokenType {
     SPL_TOKEN_GENERIC,                    // "$"
     SPL_TOKEN_AMPERSAND,                  // "&"
     SPL_TOKEN_BITWISE_OR,                 // "|"
+    SPL_TOKEN_BITWISE_XOR,                // "^"
     SPL_TOKEN_LEFT_PAREN,                 // "("
     SPL_TOKEN_RIGHT_PAREN,                // ")"
     SPL_TOKEN_STAR,                       // "*"
@@ -71,6 +72,7 @@ internal char* token_strings[] = {
     stringify(SPL_TOKEN_GENERIC),
     stringify(SPL_TOKEN_AMPERSAND),
     stringify(SPL_TOKEN_BITWISE_OR),
+    stringify(SPL_TOKEN_BITWISE_XOR),
     stringify(SPL_TOKEN_LEFT_PAREN),
     stringify(SPL_TOKEN_RIGHT_PAREN),
     stringify(SPL_TOKEN_STAR),
@@ -127,10 +129,19 @@ internal char* token_strings[] = {
 typedef struct SPL_Token {
     SPL_TokenType type;
     CKG_StringView name;
+    union {
+        char c;
+        int i;
+        float f;
+        bool b;
+    };
     u32 line;
 } SPL_Token;
 
-#define SPL_TOKEN_CREATE(token_type, name, line) (SPL_Token){(token_type), (name), (line)}
+#define SPL_TOKEN_CREATE_CUSTOM(token_type, name, line) (SPL_Token){(token_type), (name), 0, (line)}
+
+SPL_Token spl_token_from_string(CKG_StringView sv, u32 line);
+#define SPL_TOKEN_CREATE(value, line) spl_token_from_string(value, line)
 
 void token_print(SPL_Token token, char* indent);
 SPL_TokenType token_get_keyword(char* str, u64 str_length);

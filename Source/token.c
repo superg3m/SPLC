@@ -4,6 +4,60 @@ void token_print(SPL_Token token, char* indent) {
     CKG_LOG_PRINT("%s%s(%.*s) | line: %d\n", indent, token_strings[token.type], (int)token.name.length, token.name.data, token.line);
 }
 
+SPL_Token spl_token_from_string(CKG_StringView sv, u32 line) {
+    SPL_Token token = { .line = line, .name = sv };
+    
+    if (token.name.data[0] == '"') {
+        token.type = SPL_TOKEN_STRING_LITERAL;
+        return token;
+    } else if (token.name.data[0] == '\'') {
+        token.type = SPL_TOKEN_CHARACTER_LITERAL;
+        token.c = token.name.data[1];
+
+        return token;
+    }
+
+    if (ckg_str_equal(sv.data, sv.length, CKG_LIT_ARG("true"))) {
+        token.type = SPL_TOKEN_TRUE;
+        token.b = true;
+
+        return token;
+    } else if (ckg_str_equal(sv.data, sv.length, CKG_LIT_ARG("false"))) {
+        token.type = SPL_TOKEN_FALSE;
+        token.b = false;
+
+        return token;
+    }
+
+
+    char* buffer = ckg_alloc(sv.length + 1);
+    ckg_memory_copy(sv.data, buffer, sv.length, sv.length);
+    buffer[sv.length] = '\0';
+    
+    char* endptr_int = NULL;
+    long i = strtol(buffer, &endptr_int, 10);
+    if ((size_t)(endptr_int - buffer) == sv.length) {
+        token.type = SPL_TOKEN_INTEGER_LITERAL;
+        token.i = (int)i;
+        ckg_free(buffer);
+
+        return token;
+    }
+    
+    char* endptr = NULL;
+    float f = strtof(buffer, &endptr);
+    if ((size_t)(endptr - buffer) == sv.length) {
+        token.type = SPL_TOKEN_FLOAT_LITERAL;
+        token.f = f;
+        ckg_free(buffer);
+
+        return token;
+    }
+    
+    ckg_free(buffer);
+    return token;
+}
+
 SPL_TokenType token_get_keyword(char* str, u64 str_length) {
     if (ckg_str_equal(str, str_length, CKG_LIT_ARG("if"))) {
         return SPL_TOKEN_IF;
@@ -48,6 +102,8 @@ SPL_TokenType token_get_syntax(char* str, u64 str_length) {
         return SPL_TOKEN_AMPERSAND;
     } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG("|"))) {
         return SPL_TOKEN_BITWISE_OR;
+    } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG("^"))) {
+        return SPL_TOKEN_BITWISE_XOR;
     } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG("<"))) {
         return SPL_TOKEN_LESS_THAN;
     } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG(">"))) {

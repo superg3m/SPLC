@@ -16,6 +16,4 @@ def parse(self):
         ast.append(self.expression())
 */
 
-ASTNode* parse(Parser* parser) {
-    ASTNode* ast = parse_expression(parser);
-}
+ASTNode* parse(Parser* parser);
