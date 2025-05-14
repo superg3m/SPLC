@@ -9,11 +9,11 @@ SPLC is a small, educational interpreter written in pure C. It implements a simp
 - **Interpreter**: The interpreter evaluates the AST and executes SPL programs.
 - **Control Flow**: Supports conditional statements (if/else) and loops (while, for).
 - **JSON AST Visualization**: Uses the cj library to visualize the AST in JSON format for debugging and better understanding.
+- **c_build**: A simple build system I created. However, a Makefile is included for convenience as well as the gcc command to compile
 
 ## Dependencies
 - **cj**: A minimal JSON library for visualizing the AST.
 - **ckg**: A personal C library that provides low-level utilities like string handling, memory management, file I/O, and more. (Note: File I/O does not handle UTF-8 and is intended for educational purposes)
-- **c_build**: A simple build system I created. However, a Makefile is included for convenience.
 
 ## Building
 
