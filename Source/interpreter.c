@@ -10,6 +10,8 @@ internal Scope scope_create(Scope* parent_scope) {
     return scope;
 }
 
+// Date: May 13, 2025
+// NOTE(Jovanni): REALISTICALLY THIS SHOULD BE A HASHTABLE...
 internal InterpreterReturn scope_try_get(Scope* scope, CKG_StringView identifier) {
     for (int i = 0; scope->variables && i < ckg_vector_count(scope->variables); i++) {
         ScopeVar variable = scope->variables[i];
@@ -21,6 +23,8 @@ internal InterpreterReturn scope_try_get(Scope* scope, CKG_StringView identifier
     return INVALID_INTERPRETER_RETURN();
 }
 
+// Date: May 13, 2025
+// NOTE(Jovanni): REALISTICALLY THIS SHOULD BE A HASHTABLE...
 internal InterpreterReturn scope_load(Scope* scope, CKG_StringView identifier) {
     InterpreterReturn ret = scope_try_get(scope, identifier);
     if (ret.type == INTERPRETER_RETURN_INVALID) {
