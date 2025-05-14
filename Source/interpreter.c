@@ -93,7 +93,11 @@ InterpreterReturn interpreter_to_string(InterpreterReturn v) {
 
     u64 str_length = 0;
     if (v.type == INTERPRETER_STRING) {
-        result.str = v.str;
+        if (v.str.data[0] == '"' && v.str.data[v.str.length - 1] == '"') {
+            result.str = ckg_sv_create(v.str.data + 1, v.str.length - 2);
+        } else {
+            result.str = v.str;
+        }
     } else if (v.type == INTERPRETER_INTEGER) {
         char* str = ckg_str_sprint(&str_length, "%d", v.i);
         result.str = ckg_sv_create(str, str_length);
@@ -116,7 +120,7 @@ InterpreterReturn interpreter_concat(InterpreterReturn left, InterpreterReturn r
     right = interpreter_to_string(right);
 
     u64 str_length = 0;
-    char* str = ckg_str_sprint(&str_length, "%*.s%*.s", left.str.length, left.str.data, right.str.length, right.str.data);
+    char* str = ckg_str_sprint(&str_length, "%.*s%.*s", left.str.length, left.str.data, right.str.length, right.str.data);
     result.str = ckg_sv_create(str, str_length);
 
     return result;
@@ -132,7 +136,6 @@ int interpreter_as_int(InterpreterReturn v) {
 
 InterpreterReturn interpret_expression(Expression* expression, Scope* scope) {
     InterpreterReturn ret = INVALID_INTERPRETER_RETURN();
-
 
     if (expression->type == EXPRESSION_TYPE_INTEGER) {
         ret.type = INTERPRETER_INTEGER;
@@ -308,7 +311,8 @@ void interpret_statement(Statement* statement, Scope* scope) {
         if (value.type == INTERPRETER_INTEGER) {
             printf("%d\n", value.i);
         } else if (value.type == INTERPRETER_STRING) {
-            printf("%.*s\n", (int)value.str.length, value.str.data);
+            value = interpreter_to_string(value);
+            printf("\"%.*s\"\n", (int)value.str.length, value.str.data);
         } else if (value.type == INTERPRETER_BOOL) {
             printf(value.b ? "true\n" : "false\n");
         }
