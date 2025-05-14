@@ -310,6 +310,8 @@ void interpret_statement(Statement* statement, Scope* scope) {
         InterpreterReturn value = interpret_expression(statement->print_statement->value, scope);
         if (value.type == INTERPRETER_INTEGER) {
             printf("%d\n", value.i);
+        } if (value.type == INTERPRETER_FLOAT) {
+            printf("%f\n", (float)value.f);
         } else if (value.type == INTERPRETER_STRING) {
             value = interpreter_to_string(value);
             printf("\"%.*s\"\n", (int)value.str.length, value.str.data);
