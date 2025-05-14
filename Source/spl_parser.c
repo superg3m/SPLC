@@ -273,7 +273,7 @@ Statement* parse_statement(Parser* parser, bool requires_semi_colon) {
     return NULL;
 }
 
-Program* program(Parser* parser) {
+Program* parse_program(Parser* parser) {
     Statement** statements = NULLPTR;
     while (parser->current < ckg_vector_count(parser->tokens) - 1) {
         ckg_vector_push(statements, parse_statement(parser, true));
@@ -285,7 +285,7 @@ Program* program(Parser* parser) {
 ASTNode* parse(SPL_Token* token_stream) {
     Parser parser = {0};
     parser.tokens = token_stream;
-    ASTNode* ast = ast_node_create(AST_NODE_PROGRAM, (void*)program(&parser));
+    ASTNode* ast = ast_node_create(AST_NODE_PROGRAM, (void*)parse_program(&parser));
 
     return ast;
 }
