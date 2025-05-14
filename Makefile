@@ -4,9 +4,9 @@ CFLAGS = -std=c11 -Wall -Wno-deprecated -Wno-parentheses -Wno-missing-braces \
          -Wno-switch -Wno-unused-variable -Wno-unused-result -Werror -g
 
 # Directories
-SRC_DIR = ../../Source
-EXT_DIR = ../../external_source
-INC_DIRS = -I../../Include -I$(EXT_DIR)
+SRC_DIR = ../Source
+EXT_DIR = ../external_source
+INC_DIRS = -I../Include -I$(EXT_DIR)
 OUT_DIR = make_build
 TARGET = $(OUT_DIR)/splc.exe
 
