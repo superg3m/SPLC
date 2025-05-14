@@ -46,19 +46,20 @@ make
 
 ### Simple compiler version
 ```
-gcc -std=c11 -Wall -Wno-deprecated -Wno-parentheses -Wno-missing-braces \
-    -Wno-switch -Wno-unused-variable -Wno-unused-result -Werror -g \
-    -I./Include -I./external_source \
-    ./Source/ast.c \
-    ./Source/expression.c \
-    ./Source/interpreter.c \
-    ./Source/lexer.c \
-    ./Source/main.c \
-    ./Source/spl_parser.c \
-    ./Source/statement.c \
-    ./Source/token.c \
-    ./external_source/ckg.c \
-    ./external_source/cj.c \
+mkdir make_build
+gcc -std=c11 -Wall -Wno-deprecated -Wno-parentheses -Wno-missing-braces `
+    -Wno-switch -Wno-unused-variable -Wno-unused-result -Werror -g `
+    -I./Include -I./external_source `
+    ./Source/ast.c `
+    ./Source/expression.c `
+    ./Source/interpreter.c `
+    ./Source/lexer.c `
+    ./Source/main.c `
+    ./Source/spl_parser.c `
+    ./Source/statement.c `
+    ./Source/token.c `
+    ./external_source/ckg.c `
+    ./external_source/cj.c `
     -o make_build/splc.exe
 ```
 
