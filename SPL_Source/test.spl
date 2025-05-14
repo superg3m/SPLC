@@ -16,23 +16,14 @@ If you do true && 3 then it has to interpret 3 and it will give you an unsupport
 // false && false || true  // true
 // 2 > 1 && 4 > 6 || 7 + 3 >= 6 && 5 == 2 // false
 
-print(7 + 3);
-
-// x = (22 + 1) % 3;
-
-x = 3;
-print(x);
-
-/*
+x = (22 + 1) % 3;
 x = x - 1;
-
 
 if (true) {
     y = 7 + x;
     x = y;
     print(x);
 }
-
 
 if (x == 8) {
     x = 5;
@@ -45,6 +36,7 @@ if (x == 8) {
     print("WOWS: " + y);
 }
 
+
 i = 0;
 while (i < 5) {
     print("WOW THIS ACTUALLY WORKS: " +  i);
@@ -54,4 +46,3 @@ while (i < 5) {
 for (j = 9; j >= x; j = j - 1) {
     print("Ogga: " + j);
 }
-*/

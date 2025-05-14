@@ -1,6 +1,8 @@
 // https://github.com/NikRadi/minic
 
-Lexer
+dependencies: [ckg, cj]
+
+Lexer 
 Parser
 Interpreter
 
