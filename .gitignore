@@ -44,4 +44,5 @@ cj/
 *.ps1
 *.sh
 
-!bootstrap.*
+!bootstrap.ps1
+!bootstrap.sh
