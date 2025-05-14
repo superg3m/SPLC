@@ -1,5 +1,3 @@
-# Makefile for SPLC - call it `make_build`
-
 # Compiler and flags
 CC = gcc
 CFLAGS = -std=c11 -Wall -Wno-deprecated -Wno-parentheses -Wno-missing-braces \
@@ -9,7 +7,7 @@ CFLAGS = -std=c11 -Wall -Wno-deprecated -Wno-parentheses -Wno-missing-braces \
 SRC_DIR = ../../Source
 EXT_DIR = ../../external_source
 INC_DIRS = -I../../Include -I$(EXT_DIR)
-OUT_DIR = ./build_gcc/debug
+OUT_DIR = make_build
 TARGET = $(OUT_DIR)/splc.exe
 
 # Source files
@@ -34,4 +32,4 @@ $(TARGET): $(SRCS)
 .PHONY: clean
 
 clean:
-       rm -f $(TARGET)
+	rm -rf $(OUT_DIR)
