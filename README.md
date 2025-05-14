@@ -61,6 +61,8 @@ gcc -std=c11 -Wall -Wno-deprecated -Wno-parentheses -Wno-missing-braces `
     ./external_source/ckg.c `
     ./external_source/cj.c `
     -o make_build/splc.exe
+
+./make_build/splc.exe ./SPL_Source/test.spl
 ```
 
 ## Example SPL
