@@ -2,6 +2,8 @@
 
 dependencies: [ckg, cj]
 
+cj is used for json parsing just for visualizing the ast
+
 Lexer 
 Parser
 Interpreter
