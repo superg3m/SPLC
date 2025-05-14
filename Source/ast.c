@@ -23,17 +23,6 @@ Program* program_create(Statement** statements) {
     return ret;
 }
 
-static bool is_primitive_type(Expression* expr) {
-    return expr->type == EXPRESSION_TYPE_STRING ||
-           expr->type == EXPRESSION_TYPE_INTEGER ||
-           expr->type == EXPRESSION_TYPE_FLOAT ||
-           expr->type == EXPRESSION_TYPE_BOOLEAN;
-}
-
-static const char* bool_to_string(bool value) {
-    return value ? "true" : "false";
-}
-
 internal JSON* ast_to_json_helper(JSON* root, ASTNode* node, CJ_Arena* arena) {
     #define TO_CJ_SV(sv) (CJ_StringView){sv.data, 0, sv.length}
 
