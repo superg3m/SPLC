@@ -3,7 +3,7 @@
 // #define CJ_IMPL 
 // for the implementation details
 
-#ifdef __cplusplus
+#ifdef __cpluCJus
     #define CJ_API extern "C"
 #else 
     #define CJ_API
