@@ -45,7 +45,13 @@ internal CKG_StringView lexer_get_scratch_buffer(Lexer* lexer) {
 
 internal void lexer_report_error(Lexer* lexer, char* msg) {
     CKG_StringView scratch = lexer_get_scratch_buffer(lexer);
-    CKG_LOG_ERROR("String: %.*s\n", (int)scratch.length, scratch.data);
+    CKG_LOG_ERROR("String: %.*s\n", (int)scratch.length, scratch.data); 
+
+    CKG_LOG_ERROR("Bytes:\n");
+    for (int i = 0; i < (int)scratch.length; i++) {
+        CKG_LOG_PRINT("%d\n", scratch.data[i]);
+    }
+
     CKG_LOG_ERROR("[LEXER ERROR] line: %d | %s", lexer->line, msg);
     ckg_assert(false);
 }
