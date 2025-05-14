@@ -62,23 +62,97 @@ internal void scope_store(Scope* scope, CKG_StringView identifier, InterpreterRe
     ckg_vector_push(scope->variables, new_var);
 }
 
+InterpreterType interpreter_promote_type(InterpreterType a, InterpreterType b) {
+    if (a == INTERPRETER_STRING || b == INTERPRETER_STRING) {
+        return INTERPRETER_STRING;
+    }
+
+    if ((a == INTERPRETER_FLOAT && b == INTERPRETER_INTEGER) ||
+        (a == INTERPRETER_INTEGER && b == INTERPRETER_FLOAT) ||
+        (a == INTERPRETER_FLOAT && b == INTERPRETER_FLOAT)) {
+        return INTERPRETER_FLOAT;
+    }
+
+
+    if ((a == INTERPRETER_FLOAT && b == INTERPRETER_INTEGER) ||
+        (a == INTERPRETER_INTEGER && b == INTERPRETER_FLOAT) ||
+        (a == INTERPRETER_FLOAT && b == INTERPRETER_FLOAT)) {
+        return INTERPRETER_FLOAT;
+    }
+
+    if (a == INTERPRETER_INTEGER && b == INTERPRETER_INTEGER) {
+        return INTERPRETER_INTEGER;
+    }
+
+    return -1; // invalid promotion
+}
+
+InterpreterReturn interpreter_to_string(InterpreterReturn v) {
+    InterpreterReturn result = {0};
+    result.type = INTERPRETER_STRING;
+
+    u64 str_length = 0;
+    if (v.type == INTERPRETER_STRING) {
+        result.str = v.str;
+    } else if (v.type == INTERPRETER_INTEGER) {
+        char* str = ckg_str_sprint(&str_length, "%d", v.i);
+        result.str = ckg_sv_create(str, str_length);
+    } else if (v.type == INTERPRETER_FLOAT) {
+        char* str = ckg_str_sprint(&str_length, "%f", v.f);
+        result.str = ckg_sv_create(str, str_length);
+    } else {
+        interpreter_runtime_error(v.line, "Cannot convert type '%s' to string",
+            interpreter_type_strings[v.type]);
+    }
+
+    return result;
+}
+
+InterpreterReturn interpreter_concat(InterpreterReturn left, InterpreterReturn right) {
+    InterpreterReturn result = {0};
+    result.type = INTERPRETER_STRING;
+
+    left = interpreter_to_string(left);
+    right = interpreter_to_string(right);
+
+    u64 str_length = 0;
+    char* str = ckg_str_sprint(&str_length, "%*.s%*.s", left.str.length, left.str.data, right.str.length, right.str.data);
+    result.str = ckg_sv_create(str, str_length);
+
+    return result;
+}
+
+double interpreter_as_float(InterpreterReturn v) {
+    return v.type == INTERPRETER_FLOAT ? v.f : (double)v.i;
+}
+
+int interpreter_as_int(InterpreterReturn v) {
+    return v.i;
+}
+
 InterpreterReturn interpret_expression(Expression* expression, Scope* scope) {
     InterpreterReturn ret = INVALID_INTERPRETER_RETURN();
 
+
     if (expression->type == EXPRESSION_TYPE_INTEGER) {
-        ret.type = INTERPRETER_NUMBER;
+        ret.type = INTERPRETER_INTEGER;
+        ret.line = expression->integer->line;
         ret.i = expression->integer->value;
     } else if (expression->type == EXPRESSION_TYPE_FLOAT) {
-        ret.type = INTERPRETER_NUMBER;
+        ret.type = INTERPRETER_FLOAT;
+        ret.line = expression->floating->line;
         ret.f = expression->floating->value;
     } else if (expression->type == EXPRESSION_TYPE_STRING) {
         ret.type = INTERPRETER_STRING;
+        ret.line = expression->str->line;
         ret.str = expression->str->name;
     } else if (expression->type == EXPRESSION_TYPE_BOOLEAN) {
         ret.type = INTERPRETER_BOOL;
+        ret.line = expression->boolean->line;
         ret.b = expression->boolean->value;
     } else if (expression->type == EXPRESSION_TYPE_IDENTIFER) {
         ret = scope_load(scope, expression->identifier->name);
+        ret.line = expression->identifier->line;
         if (ret.type == INTERPRETER_RETURN_INVALID) {
             interpreter_runtime_error(expression->identifier->line, "Undeclared identifier '%.*s'\n", expression->identifier->name.length, expression->identifier->name.data);
         }
@@ -92,90 +166,81 @@ InterpreterReturn interpret_expression(Expression* expression, Scope* scope) {
 
         SPL_TokenType op = expression->binary->operation.type;
 
+        ret.line = expression->binary->line;
         if (op == SPL_TOKEN_PLUS) {
-            if (left.type == INTERPRETER_NUMBER && right.type == INTERPRETER_NUMBER) {
-                ret.type = INTERPRETER_NUMBER;
-                ret.i = left.i + right.i;
-            } else if (left.type == INTERPRETER_STRING && right.type == INTERPRETER_STRING) {
-                ret.type = INTERPRETER_STRING;
+           InterpreterType promoted = interpreter_promote_type(left.type, right.type);
 
-                u64 str_length = 0;
-                char* str = ckg_str_sprint(&str_length, "%.*s%.*s", left.str.length, left.str.data, right.str.length, right.str.data);
-                ret.str = ckg_sv_create(str, str_length - 1);
-            } else if (left.type == INTERPRETER_NUMBER && right.type == INTERPRETER_STRING) {
-                ret.type = INTERPRETER_STRING;
-
-                u64 str_length = 0;
-                char* str = ckg_str_sprint(&str_length, "\"%d%.*s", left.i, right.str.length - 1, right.str.data + 1);
-                ret.str = ckg_sv_create(str, str_length - 1);
-            } else if (left.type == INTERPRETER_STRING && right.type == INTERPRETER_NUMBER) {
-                ret.type = INTERPRETER_STRING;
-
-                u64 str_length = 0;
-                char* str = ckg_str_sprint(&str_length, "%.*s%d\"", left.str.length - 1, left.str.data, right.i);
-                ret.str = ckg_sv_create(str, str_length - 1);
+            if (promoted == INTERPRETER_FLOAT) {
+                ret.type = INTERPRETER_FLOAT;
+                ret.f = interpreter_as_float(left) + interpreter_as_float(right);
+            } else if (promoted == INTERPRETER_INTEGER) {
+                ret.type = INTERPRETER_INTEGER;
+                ret.i = interpreter_as_int(left) + interpreter_as_int(right);
+            } else if (promoted == INTERPRETER_STRING) {
+                ret = interpreter_concat(left, right);
             } else {
-                interpreter_runtime_error(expression->binary->line, "Cannot apply '+' to types '%s' and '%s'\n", 
-                    interpreter_type_strings[left.type], 
+                interpreter_runtime_error(expression->binary->line,
+                    "Unsupported promotion for '+' between '%s' and '%s'",
+                    interpreter_type_strings[left.type],
                     interpreter_type_strings[right.type]);
             }
         } else if (op == SPL_TOKEN_MINUS) {
-            if (left.type == INTERPRETER_NUMBER && right.type == INTERPRETER_NUMBER) {
-                ret.type = INTERPRETER_NUMBER;
+            if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
+                ret.type = INTERPRETER_INTEGER;
                 ret.i = left.i - right.i;
             }
         } else if (op == SPL_TOKEN_STAR) {
-            if (left.type == INTERPRETER_NUMBER && right.type == INTERPRETER_NUMBER) {
-                ret.type = INTERPRETER_NUMBER;
+            if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
+                ret.type = INTERPRETER_INTEGER;
                 ret.i = left.i * right.i;
             }
         } else if (op == SPL_TOKEN_DIVISION) {
-            if (left.type == INTERPRETER_NUMBER && right.type == INTERPRETER_NUMBER) {
-                ret.type = INTERPRETER_NUMBER;
+            if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
+                ret.type = INTERPRETER_INTEGER;
                 ret.i = left.i / right.i;
             }
         } else if (op == SPL_TOKEN_MODULUS) {
-            if (left.type == INTERPRETER_NUMBER && right.type == INTERPRETER_NUMBER) {
-                ret.type = INTERPRETER_NUMBER;
+            if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
+                ret.type = INTERPRETER_INTEGER;
                 ret.i = left.i % right.i;
             }
         } else if (op == SPL_TOKEN_AMPERSAND) {
-            if (left.type == INTERPRETER_NUMBER && right.type == INTERPRETER_NUMBER) {
-                ret.type = INTERPRETER_NUMBER;
+            if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
+                ret.type = INTERPRETER_INTEGER;
                 ret.i = left.i & right.i;
             }
         } else if (op == SPL_TOKEN_BITWISE_OR) {
-            if (left.type == INTERPRETER_NUMBER && right.type == INTERPRETER_NUMBER) {
-                ret.type = INTERPRETER_NUMBER;
+            if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
+                ret.type = INTERPRETER_INTEGER;
                 ret.i = left.i & right.i;
             }
         } else if (op == SPL_TOKEN_GREATER_THAN) {
-            if (left.type == INTERPRETER_NUMBER && right.type == INTERPRETER_NUMBER) {
+            if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
                 ret.type = INTERPRETER_BOOL;
                 ret.b = left.i > right.i;
             }
         } else if (op == SPL_TOKEN_GREATER_THAN_EQUALS) {
-            if (left.type == INTERPRETER_NUMBER && right.type == INTERPRETER_NUMBER) {
+            if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
                 ret.type = INTERPRETER_BOOL;
                 ret.b = left.i >= right.i;
             }
         } else if (op == SPL_TOKEN_LESS_THAN) {
-            if (left.type == INTERPRETER_NUMBER && right.type == INTERPRETER_NUMBER) {
+            if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
                 ret.type = INTERPRETER_BOOL;
                 ret.b = left.i < right.i;
             }
         } else if (op == SPL_TOKEN_LESS_THAN) {
-            if (left.type == INTERPRETER_NUMBER && right.type == INTERPRETER_NUMBER) {
+            if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
                 ret.type = INTERPRETER_BOOL;
                 ret.b = left.i <= right.i;
             }
         } else if (op == SPL_TOKEN_EQUALS) {
-            if (left.type == INTERPRETER_NUMBER && right.type == INTERPRETER_NUMBER) {
+            if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
                 ret.type = INTERPRETER_BOOL;
                 ret.b = left.i == right.i;
             }
         } else if (op == SPL_TOKEN_EQUALS) {
-            if (left.type == INTERPRETER_NUMBER && right.type == INTERPRETER_NUMBER) {
+            if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
                 ret.type = INTERPRETER_BOOL;
                 ret.b = left.i != right.i;
             }
@@ -190,6 +255,7 @@ InterpreterReturn interpret_expression(Expression* expression, Scope* scope) {
 
         SPL_TokenType op = expression->logical->operation.type;
 
+        ret.line = expression->logical->line;
         if (op == SPL_TOKEN_AND) {
             if (!left.b) {
                 ret.type = INTERPRETER_BOOL;
@@ -239,7 +305,7 @@ void interpret_statements(Statement** statements, Scope* scope);
 void interpret_statement(Statement* statement, Scope* scope) {
     if (statement->type == STATEMENT_TYPE_PRINT) {
         InterpreterReturn value = interpret_expression(statement->print_statement->value, scope);
-        if (value.type == INTERPRETER_NUMBER) {
+        if (value.type == INTERPRETER_INTEGER) {
             printf("%d\n", value.i);
         } else if (value.type == INTERPRETER_STRING) {
             printf("%.*s\n", (int)value.str.length, value.str.data);

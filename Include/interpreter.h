@@ -3,7 +3,8 @@
 
 typedef enum InterpreterType {
     INTERPRETER_RETURN_INVALID,
-    INTERPRETER_NUMBER,
+    INTERPRETER_INTEGER,
+    INTERPRETER_FLOAT,
     INTERPRETER_STRING,
     INTERPRETER_BOOL,
     INTERPRETER_COUNT
@@ -11,13 +12,15 @@ typedef enum InterpreterType {
 
 internal char* interpreter_type_strings[INTERPRETER_COUNT] = {
     stringify(INTERPRETER_RETURN_INVALID),
-    stringify(INTERPRETER_NUMBER),
+    stringify(INTERPRETER_INTEGER),
+    stringify(INTERPRETER_FLOAT),
     stringify(INTERPRETER_STRING),
     stringify(INTERPRETER_BOOL)
 };
 
 typedef struct InterpreterReturn {
     InterpreterType type;
+    int line;
     union {
         CKG_StringView str;
         int i;
