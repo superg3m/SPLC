@@ -100,18 +100,22 @@ for (j = 9; j >= x; j = j - 1) {
 
 ``` 
 23
-X's value is: 2
-Hello World! | 58.32
-9
-X's value is: 9
-Hello: 12
-World: 16
-WOW THIS ACTUALLY WORKS: 0
-WOW THIS ACTUALLY WORKS: 1
-WOW THIS ACTUALLY WORKS: 2
-WOW THIS ACTUALLY WORKS: 3
-WOW THIS ACTUALLY WORKS: 4
-Ogga: 3
+"X's value is: 1"
+"Hello World! | 58.320000"
+8
+"X's value is: 5"
+"Hello: 12"
+"World: 16"
+"WOW THIS ACTUALLY WORKS: 0"
+"WOW THIS ACTUALLY WORKS: 1"
+"WOW THIS ACTUALLY WORKS: 2"
+"WOW THIS ACTUALLY WORKS: 3"
+"WOW THIS ACTUALLY WORKS: 4"
+"Ogga: 3"
+"Ogga: 3"
+"Ogga: 3"
+"Ogga: 3"
+"Ogga: 3"
 ```
 
 ## Project Structure
