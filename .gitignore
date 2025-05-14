@@ -40,3 +40,8 @@ c_build/
 ckg/
 cj/
 .vscode/
+
+*.ps1
+*.sh
+
+!bootstrap.*
