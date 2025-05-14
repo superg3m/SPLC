@@ -19,13 +19,8 @@ from c_build.source.Manager import *
 pc: ProjectConfig = ProjectConfig(
     project_name = "splc",
     project_dependencies = [
-        Dependency(
-            "ckg",
-            branch_name="CompleteRewrite"
-        ),
-        Dependency(
-            "cj"
-        )
+        Dependency("ckg", branch_name="CompleteRewrite"),
+        Dependency("cj")
     ],
     project_debug_with_visual_studio = False,
     project_rebuild_project_dependencies = True,

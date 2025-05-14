@@ -1,5 +1,7 @@
 #include <spl_parser.h>
 
+// Date: May 13, 2025
+// NOTE(Jovanni): Try to keep this updated
 // Expression
 //  └── Logical (||, &&)
 //       └── Comparison (==, !=, <, >, etc.)
