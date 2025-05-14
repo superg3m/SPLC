@@ -20,7 +20,7 @@ internal void lexer_consume_next_char(Lexer* lexer) {
 }
 
 internal bool is_whitespace(char c) {
-    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\0';
 }
 
 internal bool lexer_consume_whitespace(Lexer* lexer) {
