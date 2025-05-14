@@ -19,10 +19,10 @@ int main(int argc, char** argv) {
 	CKG_Arena arena = ckg_arena_create_fixed(program_stack_memory, TOTAL_MEMORY_SIZE, true);
 	ckg_bind_custom_allocator(custom_alloc_callback, custom_free_callback, &arena);
 
-    if (argc != 2) {
-        CKG_LOG_ERROR("Usage: splc <filename>\n");
-        return -1;
-    }
+	if (argc != 2) {
+		CKG_LOG_ERROR("Usage: splc <filename>\n");
+		return -1;
+	}
 
 	char* file_name = argv[1];
 	u64 source_length = 0;
@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
 	u8* source = ckg_io_read_entire_file(file_name, &source_length, &file_err);
 	if (file_err != CKG_ERROR_SUCCESS) {
 		CKG_LOG_ERROR("Can't find file: %s | err: %s\n", file_name, ckg_error_str(file_err));
-        return file_err;
+		return file_err;
 	}
 
 	Lexer lexer = lexer_create();
@@ -49,5 +49,5 @@ int main(int argc, char** argv) {
 	interpret_ast(ast);
 
 	ckg_vector_free(token_stream);
-    ckg_arena_free(&arena);
+	ckg_arena_free(&arena);
 }
