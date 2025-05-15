@@ -27,7 +27,7 @@ internal void parser_report_error(Parser* parser, char* fmt, ...) {
     CKG_LOG_ERROR("Error Line: %d | %s", parser->tok.line, ckg_str_va_sprint(NULLPTR, fmt, args));
     va_end(args);
 
-    ckg_assert(false);
+    exit(-1);
 }
 
 internal SPL_Token parser_consume_next_token(Parser* parser) {

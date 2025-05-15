@@ -29,7 +29,6 @@ int main(int argc, char** argv) {
 	CKG_Error file_err = CKG_ERROR_SUCCESS;
 	u8* source = ckg_io_read_entire_file(file_name, &source_length, &file_err);
 	if (file_err != CKG_ERROR_SUCCESS) {
-		CKG_LOG_ERROR("Can't find file: %s | err: %s\n", file_name, ckg_error_str(file_err));
 		return file_err;
 	}
 
