@@ -7,24 +7,18 @@
 internal Scope scope_create(Scope* parent_scope) {
     Scope scope = {0};
     scope.parent_scope = parent_scope;
+    ckg_hashmap_init_string_view_hash(scope.variables, CKG_StringView, InterpreterReturn);
     return scope;
 }
 
-// Date: May 13, 2025
-// NOTE(Jovanni): REALISTICALLY THIS SHOULD BE A HASHTABLE...
 internal InterpreterReturn scope_try_get(Scope* scope, CKG_StringView identifier) {
-    for (int i = 0; scope->variables && i < ckg_vector_count(scope->variables); i++) {
-        ScopeVar variable = scope->variables[i];
-        if (ckg_str_equal(variable.name.data, variable.name.length, identifier.data, identifier.length)) {
-            return variable.ret;
-        }
+    if (!ckg_hashmap_has(scope->variables, identifier)) {
+        return INVALID_INTERPRETER_RETURN();
     }
 
-    return INVALID_INTERPRETER_RETURN();
+    return ckg_hashmap_get(scope->variables, identifier);
 }
 
-// Date: May 13, 2025
-// NOTE(Jovanni): REALISTICALLY THIS SHOULD BE A HASHTABLE...
 internal InterpreterReturn scope_load(Scope* scope, CKG_StringView identifier) {
     InterpreterReturn ret = scope_try_get(scope, identifier);
     if (ret.type == INTERPRETER_RETURN_INVALID) {
@@ -40,26 +34,21 @@ internal InterpreterReturn scope_load(Scope* scope, CKG_StringView identifier) {
 
 internal void scope_store(Scope* scope, CKG_StringView identifier, InterpreterReturn value) {
     Scope* current_scope = scope->parent_scope;
-    for (int i = 0; current_scope && current_scope->variables && i < ckg_vector_count(current_scope->variables); i++) {
-        ScopeVar* variable = &current_scope->variables[i];
-        if (ckg_str_equal(variable->name.data, variable->name.length, identifier.data, identifier.length)) {
-            variable->ret = value;
+    while (current_scope) {
+        if (ckg_hashmap_has(current_scope->variables, identifier)) {
+            ckg_hashmap_put(current_scope->variables, identifier, value);
             return;
         }
+
+        current_scope = current_scope->parent_scope;
     }
 
-    for (int i = 0; scope->variables && i < ckg_vector_count(scope->variables); i++) {
-        ScopeVar* variable = &scope->variables[i];
-        if (ckg_str_equal(variable->name.data, variable->name.length, identifier.data, identifier.length)) {
-            variable->ret = value;
-            return;
-        }
+    if (ckg_hashmap_has(scope->variables, identifier)) {
+        ckg_hashmap_put(scope->variables, identifier, value);
+        return;
     }
 
-    ScopeVar new_var;
-    new_var.name = identifier;
-    new_var.ret = value;
-    ckg_vector_push(scope->variables, new_var);
+    ckg_hashmap_put(scope->variables, identifier, value);
 }
 
 InterpreterType interpreter_promote_type(InterpreterType a, InterpreterType b) {

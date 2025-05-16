@@ -31,14 +31,9 @@ typedef struct InterpreterReturn {
 
 #define INVALID_INTERPRETER_RETURN() (InterpreterReturn){INTERPRETER_RETURN_INVALID, 0}
 
-typedef struct ScopeVar {
-    CKG_StringView name;
-    InterpreterReturn ret;
-} ScopeVar;
-
 typedef struct Scope {
     struct Scope* parent_scope;
-    ScopeVar* variables;
+    CKG_HashMap(CKG_StringView, InterpreterReturn)* variables;
 } Scope;
 
 void interpret_ast(ASTNode* ast);
