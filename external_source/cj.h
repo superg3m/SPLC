@@ -3,7 +3,7 @@
 // #define CJ_IMPL 
 // for the implementation details
 
-#ifdef __cpluCJus
+#ifdef __cplusplus
     #define CJ_API extern "C"
 #else 
     #define CJ_API
@@ -33,8 +33,6 @@
 #define CJ_INCLUDE_PARSING
 
 #if defined(CJ_INCLUDE_TYPES)
-    #undef FALSE
-    #undef TRUE
     #undef NULLPTR
     #undef PI
     #undef stringify
@@ -47,13 +45,11 @@
     #undef CLAMP
     #undef local_persist
     #undef internal
-    #undef OFFSET_OF
     #undef FIRST_DIGIT
     #undef GET_BIT
     #undef SET_BIT
     #undef UNSET_BIT
     #undef ArrayCount
-    #undef PLATFORM_MAX_PATH
     #undef PLATFORM_WINDOWS
     #undef PLATFORM_APPLE
     #undef PLATFORM_LINUX
@@ -61,35 +57,32 @@
     #undef CRASH
     #undef UNUSED_FUNCTION
 
-    #include <stdint.h>
     #include <stdio.h>
+    #include <stdbool.h>
+    #include <stdint.h>
     #include <stdarg.h>
     #include <stdlib.h>
-    #include <ctype.h>
+    #include <stddef.h>
 
     typedef int8_t  s8;
     typedef int16_t s16;
-    typedef int32_t s32;
     typedef int64_t s64;
 
     typedef uint8_t  u8;
     typedef uint16_t u16;
-    typedef uint32_t u32;
     typedef uint64_t u64;
 
-    typedef u8 Boolean;
-
-    #define FALSE 0
-    #define TRUE 1
     #define NULLPTR 0
     #define PI 3.14159265359
+    #define DEGREES_TO_RAD(degrees) ((degrees)*(PI/180))
+    #define RAD_TO_DEGREES(rad) ((rad)*(180/PI))
 
     #define stringify(entry) #entry
     #define glue(a, b) a##b
 
-    #define KiloBytes(value) ((u64)(value) * 1024L)
-    #define MegaBytes(value) ((u64)KiloBytes(value) * 1024L)
-    #define GigaBytes(value) ((u64)MegaBytes(value) * 1024L)
+    #define KiloBytes(value) ((size_t)(value) * 1024L)
+    #define MegaBytes(value) ((size_t)KiloBytes(value) * 1024L)
+    #define GigaBytes(value) ((size_t)MegaBytes(value) * 1024L)
 
     #define MIN(a, b) (((a) < (b)) ? (a) : (b))
     #define MAX(a, b) (((a) > (b)) ? (a) : (b))
@@ -98,28 +91,27 @@
     #define local_persist static
     #define internal static
 
-    // Date: July 12, 2024
-    // TODO(Jovanni): Test this to make sure its actually works but it makes sense to me
-    #define OFFSET_OF(type, member) sizeof((u64)(&(((type*)0)->member)))
     #define FIRST_DIGIT(number) ((int)number % 10);
-
     #define GET_BIT(number, bit_to_check) ((number & (1 << bit_to_check)) >> bit_to_check)
     #define SET_BIT(number, bit_to_set) number |= (1 << bit_to_set);
     #define UNSET_BIT(number, bit_to_unset) number &= (~(1 << bit_to_unset));
 
-    #define ArrayCount(array) (sizeof(array) / sizeof(array[0]))
-    #define PLATFORM_MAX_PATH 256
+    #define ArrayCount(array) (int)(sizeof(array) / sizeof(array[0]))
 
     #if defined(_WIN32)
+        #define NOMINMAX
+        #define WIN32_LEAN_AND_MEAN
         #include <windows.h>
         #define PLATFORM_WINDOWS
         #define OS_DELIMITER '\\'
         #define CRASH __debugbreak()
     #elif defined(__APPLE__)
+        #include <dlfcn.h>
         #define PLATFORM_APPLE
         #define OS_DELIMITER '/'
         #define CRASH __builtin_trap()
     #elif defined(__linux__) || defined(__unix__) || defined(__POSIX__)
+        #include <dlfcn.h>
         #define PLATFORM_LINUX
         #define OS_DELIMITER '/'
         #define CRASH __builtin_trap()
@@ -137,7 +129,7 @@
 #endif
 
 #if defined (CJ_INCLUDE_OS)
-    Boolean cj_os_path_exists(const char* path);
+    bool cj_os_path_exists(const char* path);
     u8* cj_os_read_entire_file(const char* path, u64* returned_file_size);
 #endif
 
@@ -199,7 +191,7 @@
     typedef struct JSON {
         CJ_Type type;
         union {
-            Boolean cj_bool;
+            bool cj_bool;
             CJ_StringView cj_string;
             double cj_float;
             int cj_int; 
@@ -220,32 +212,32 @@
     JSON* JSON_FLOAT(CJ_Arena* arena, double value);
     JSON* JSON_STRING(CJ_Arena* arena, char* value);
     JSON* JSON_STRING_VIEW(CJ_Arena* arena, CJ_StringView value); 
-    JSON* JSON_BOOL(CJ_Arena* arena, Boolean value);
+    JSON* JSON_BOOL(CJ_Arena* arena, bool value);
     JSON* JSON_JSON(CJ_Arena* arena, JSON* json);
     JSON* JSON_NULL(CJ_Arena* arena);
 
     #define cj_push(root, key, value) MACRO_cj_push(root, key, _Generic((value),  \
-        Boolean: JSON_BOOL,                \
-        char[sizeof(value)]: JSON_STRING,              \
-        const char[sizeof(value)]: JSON_STRING,              \
-        char*: JSON_STRING,                \
-        const char*: JSON_STRING,          \
-        CJ_StringView: JSON_STRING_VIEW,    \
-        double: JSON_FLOAT,                \
-        int: JSON_INT,                     \
-        JSON*: JSON_JSON                   \
+        bool: JSON_BOOL,                        \
+        char[sizeof(value)]: JSON_STRING,       \
+        const char[sizeof(value)]: JSON_STRING, \
+        char*: JSON_STRING,                     \
+        const char*: JSON_STRING,               \
+        CJ_StringView: JSON_STRING_VIEW,        \
+        double: JSON_FLOAT,                     \
+        int: JSON_INT,                          \
+        JSON*: JSON_JSON                        \
     )(root->arena, value))
 
 
     #define cj_array_push(root, value) MACRO_cj_array_push(root, _Generic((value),  \
-        Boolean: JSON_BOOL,                \
-        char[sizeof(value)]: JSON_STRING,              \
-        const char[sizeof(value)]: JSON_STRING,              \
-        char*: JSON_STRING,               \
-        const char*: JSON_STRING,         \
-        float: JSON_FLOAT,                \
-        int: JSON_INT,                    \
-        JSON*: JSON_JSON                 \
+        bool: JSON_BOOL,                        \
+        char[sizeof(value)]: JSON_STRING,       \
+        const char[sizeof(value)]: JSON_STRING, \
+        char*: JSON_STRING,                     \
+        const char*: JSON_STRING,               \
+        float: JSON_FLOAT,                      \
+        int: JSON_INT,                          \
+        JSON*: JSON_JSON                        \
     )(root->arena, value))
 #endif
 
@@ -263,24 +255,24 @@
 //
 
 #if defined(CJ_IMPL_MEMORY)
-    #define cj_assert(expression)                     \
-    do {                                               \
-        if (!(expression)) {                           \
+    #define cj_assert(expression)                          \
+    do {                                                   \
+        if (!(expression)) {                               \
             char msg_art[] = "Func: %s, File: %s:%d\n";    \
             printf(msg_art, __func__, __FILE__, __LINE__); \
-            CRASH;                                     \
-        }                                              \
-    } while (FALSE)                                    \
+            CRASH;                                         \
+        }                                                  \
+    } while (false)                                        \
 
-    #define cj_assert_msg(expression, message, ...)	          \
-    do {                                                          \
-        if (!(expression)) {                                      \
-            char msg_art[] = "Func: %s, File: %s:%d\n";               \
-            printf(msg_art, __func__, __FILE__, __LINE__);            \
-            printf(message, ##__VA_ARGS__);                       \
-            CRASH;                                                \
-        }                                                         \
-    } while (FALSE)                                               \
+    #define cj_assert_msg(expression, message, ...)	       \
+    do {                                                   \
+        if (!(expression)) {                               \
+            char msg_art[] = "Func: %s, File: %s:%d\n";    \
+            printf(msg_art, __func__, __FILE__, __LINE__); \
+            printf(message, ##__VA_ARGS__);                \
+            CRASH;                                         \
+        }                                                  \
+    } while (false)                                        \
 
     CJ_API void* cj_alloc(u64 allocation_size);
     CJ_API void* MACRO_cj_free(void* data);
@@ -312,23 +304,23 @@
         }
     }
 
-    Boolean cj_memory_compare(const void* buffer_one, const void* buffer_two, u64 buffer_one_size, u64 buffer_two_size) {
+    bool cj_memory_compare(const void* buffer_one, const void* buffer_two, u64 buffer_one_size, u64 buffer_two_size) {
         cj_assert(buffer_one);
         cj_assert(buffer_two);
 
         if (buffer_one_size != buffer_two_size) {
-            return FALSE;
+            return false;
         }
 
         u8* buffer_one_data = (u8*)buffer_one;
         u8* buffer_two_data = (u8*)buffer_two;
         for (u64 i = 0; i < buffer_one_size; i++) {
             if (buffer_one_data[i] != buffer_two_data[i]) {
-                return FALSE;
+                return false;
             }
         }
 
-        return TRUE;
+        return true;
     }
 
     void* cj_alloc(u64 allocation_size) {
@@ -357,16 +349,16 @@
 #endif
 
 #if defined(CJ_IMPL_OS)
-    Boolean cj_os_path_exists(const char* path) {
+    bool cj_os_path_exists(const char* path) {
         FILE *fptr = fopen(path, "r");
 
         if (fptr == NULL) {
-            return FALSE;
+            return false;
         }
 
         fclose(fptr);
 
-        return TRUE;
+        return true;
     }
 
     u8* cj_os_read_entire_file(const char* path, u64* returned_file_size) {
@@ -375,7 +367,7 @@
         FILE* file_handle = fopen(path, "r");
 
         if (file_handle == NULL) {
-            return FALSE;
+            return false;
         }
 
         fseek(file_handle, 0L, SEEK_END);
@@ -399,8 +391,8 @@
     //
 
     typedef struct CJ_VectorHeader {
-        u32 count;
-        u32 capacity;
+        int count;
+        int capacity;
     } CJ_VectorHeader;
 
     typedef struct CJ_Arena CJ_Arena;
@@ -434,12 +426,12 @@
         }
 
         
-        u32 count = cj_vector_count(vector);
-        u32 capactiy = cj_vector_capacity(vector);
+        int count = cj_vector_count(vector);
+        int capactiy = cj_vector_capacity(vector);
 
         if (capactiy < count + 1) {
             size_t old_allocation_size = sizeof(CJ_VectorHeader) + (capactiy * element_size);
-            u32 new_capactiy = capactiy * 2;
+            int new_capactiy = capactiy * 2;
             size_t new_allocation_size = sizeof(CJ_VectorHeader) + (new_capactiy * element_size);
 
             vector = cj_realloc(cj_vector_header_base(vector), old_allocation_size, new_allocation_size);
@@ -461,12 +453,12 @@
         }
 
         
-        u32 count = cj_vector_count(vector);
-        u32 capactiy = cj_vector_capacity(vector);
+        int count = cj_vector_count(vector);
+        int capactiy = cj_vector_capacity(vector);
 
         if (capactiy < count + 1) {
             size_t old_allocation_size = sizeof(CJ_VectorHeader) + (capactiy * element_size);
-            u32 new_capactiy = capactiy * 2;
+            int new_capactiy = capactiy * 2;
             size_t new_allocation_size = sizeof(CJ_VectorHeader) + (new_capactiy * element_size);
 
             void* new_vector = MACRO_cj_arena_push(arena, new_allocation_size);
@@ -499,8 +491,8 @@
         CJ_Node* head;
         CJ_Node* tail;
         size_t element_size_in_bytes;
-        u32 count;
-        Boolean is_pointer_type;
+        int count;
+        bool is_pointer_type;
     } CJ_LinkedList;
 
     #define cj_linked_list_create(type, is_pointer_type) MACRO_cj_linked_list_create(sizeof(type), is_pointer_type)
@@ -511,7 +503,7 @@
         #define cj_linked_list_free(linked_list) linked_list = MACRO_cj_linked_list_free(linked_list)
     #endif
 
-    CJ_LinkedList* MACRO_cj_linked_list_create(size_t element_size_in_bytes, Boolean is_pointer_type) {
+    CJ_LinkedList* MACRO_cj_linked_list_create(size_t element_size_in_bytes, bool is_pointer_type) {
         CJ_LinkedList* ret = (CJ_LinkedList*)cj_alloc(sizeof(CJ_LinkedList));
         ret->count = 0;
         ret->element_size_in_bytes = element_size_in_bytes;
@@ -578,12 +570,12 @@
     }
     #define cj_node_data_free(linked_list, node) node = MACRO_cj_node_data_free(linked_list, node)
 
-    CJ_Node* cj_linked_list_insert(CJ_LinkedList* linked_list, u32 index, void* data) {
+    CJ_Node* cj_linked_list_insert(CJ_LinkedList* linked_list, int index, void* data) {
         cj_assert(linked_list);
         cj_assert(data);
         cj_assert(index >= 0);
 
-        u32 old_count = linked_list->count++;
+        int old_count = linked_list->count++;
         if (linked_list->head == NULLPTR) { // there is not head and by definition no tail
             CJ_Node* new_node_to_insert = cj_node_create(linked_list, data);
             linked_list->head = new_node_to_insert;
@@ -615,7 +607,7 @@
         // TODO(Jovanni): check if index is closer to count or not then reverse the loop if approaching from the tail end.
         // as opposed to the head end.
         CJ_Node* current_node = linked_list->head; 
-        for (u32 i = 0; i < index; i++) {
+        for (int i = 0; i < index; i++) {
             current_node = current_node->next;
         }
 
@@ -628,17 +620,17 @@
         return new_node_to_insert;
     }
 
-    CJ_Node* cj_linked_list_get_node(CJ_LinkedList* linked_list, u32 index) {
+    CJ_Node* cj_linked_list_get_node(CJ_LinkedList* linked_list, int index) {
         cj_assert(linked_list);
         CJ_Node* current_node = linked_list->head; 
-        for (u32 i = 0; i < index; i++) {
+        for (int i = 0; i < index; i++) {
             current_node = current_node->next;
         }
 
         return current_node;
     }
 
-    void* cj_linked_list_get(CJ_LinkedList* linked_list, u32 index) {
+    void* cj_linked_list_get(CJ_LinkedList* linked_list, int index) {
         return cj_linked_list_get_node(linked_list, index)->data;
     }
 
@@ -654,25 +646,25 @@
         return cj_linked_list_insert(linked_list, linked_list->count, data);
     }
 
-    u32 cj_linked_list_node_to_index(CJ_LinkedList* linked_list, CJ_Node* address) {
+    int cj_linked_list_node_to_index(CJ_LinkedList* linked_list, CJ_Node* address) {
         CJ_Node* current_node = linked_list->head; 
-        for (u32 i = 0; i < linked_list->count + 1; i++) {
+        for (int i = 0; i < linked_list->count + 1; i++) {
             if (current_node == address) {
                 return i;
             }
             current_node = current_node->next;
         }
 
-        cj_assert(FALSE); // couldn't match a node to an address
+        cj_assert(false); // couldn't match a node to an address
         return 0; // should never get here
     }
 
-    CJ_Node cj_linked_list_remove(CJ_LinkedList* linked_list, u32 index) {
+    CJ_Node cj_linked_list_remove(CJ_LinkedList* linked_list, int index) {
         cj_assert(linked_list); 
         cj_assert(linked_list->count > 0); 
         cj_assert(index >= 0);
 
-        u32 old_count = linked_list->count--;
+        int old_count = linked_list->count--;
         if (index == 0 && old_count == 1) { // removing the head fully
             CJ_Node ret = *linked_list->head;
             cj_node_free(linked_list, linked_list->head);
@@ -701,7 +693,7 @@
         }
 
         CJ_Node* current_node = linked_list->head; 
-        for (u32 i = 0; i < index; i++) {
+        for (int i = 0; i < index; i++) {
             current_node = current_node->next;
         }
 
@@ -722,7 +714,7 @@
         cj_assert(linked_list); 
         CJ_Node* current_node = linked_list->head; 
         CJ_Node* next_node = NULLPTR; 
-        for (u32 i = 0; i < linked_list->count; i++) {
+        for (int i = 0; i < linked_list->count; i++) {
             next_node = current_node->next;
             cj_node_data_free(linked_list, current_node);
             current_node = next_node;
@@ -776,7 +768,7 @@
         return ret;
     }
 
-    Boolean cj_cstr_equal(const char* s1, u64 s1_length, const char* s2, u64 s2_length) {
+    bool cj_cstr_equal(const char* s1, u64 s1_length, const char* s2, u64 s2_length) {
         return cj_memory_compare(s1, s2, s1_length, s2_length);
     }
 
@@ -808,7 +800,7 @@
         cj_assert(index >= 0 && index <= str_length);
 
         u64 to_insert_length = 1;
-        Boolean expression = (str_length + to_insert_length) < str_capacity;
+        bool expression = (str_length + to_insert_length) < str_capacity;
         cj_assert_msg(expression, "cj_cstr_insert_char: str overflow new_capacity_required: %d >= current_capacity: %d\n",  (int)str_length + (int)to_insert_length, (int)str_capacity);
 
         char* source_ptr = str + index;
@@ -867,7 +859,7 @@
         return ret_index; // returns -1 if not found
     }
 
-    Boolean cj_cstr_contains(const char* str, u64 str_length, const char* contains, u64 contains_length) {
+    bool cj_cstr_contains(const char* str, u64 str_length, const char* contains, u64 contains_length) {
         cj_assert(str);
         cj_assert(contains);
 
@@ -959,7 +951,7 @@
         u8 alignment;
     } CJ_Arena;
 
-    Boolean cj_is_set(CJ_Arena* arena, CJ_ArenaFlag flag) {
+    bool cj_is_set(CJ_Arena* arena, CJ_ArenaFlag flag) {
         return arena->flag == flag;
     }
 
@@ -976,7 +968,7 @@
         CJ_Arena* arena = (CJ_Arena*)cj_alloc(sizeof(CJ_Arena));
         arena->alignment = alignment == 0 ? 8 : alignment;
         arena->flag = flag;
-        arena->pages = cj_linked_list_create(CJ_ArenaPage*, TRUE);
+        arena->pages = cj_linked_list_create(CJ_ArenaPage*, true);
         CJ_ArenaPage* inital_page = cj_arena_page_create(allocation_size);
         cj_linked_list_push(arena->pages, inital_page);
 
@@ -986,8 +978,8 @@
     CJ_Arena* MACRO_cj_arena_free(CJ_Arena* arena) {
         cj_assert(arena);
 
-        u32 page_count = arena->pages->count;
-        for (u32 i = 0; i < page_count; i++) {
+        int page_count = arena->pages->count;
+        for (int i = 0; i < page_count; i++) {
             CJ_ArenaPage* page = (CJ_ArenaPage*)cj_linked_list_remove(arena->pages, 0).data;
             cj_assert(page->base_address);
             cj_free(page->base_address);
@@ -1002,7 +994,7 @@
     void cj_arena_clear(CJ_Arena* arena) {
         cj_assert(arena);
 
-        for (u32 i = 0; i < arena->pages->count; i++) {
+        for (int i = 0; i < arena->pages->count; i++) {
             CJ_ArenaPage* page = (CJ_ArenaPage*)cj_linked_list_get(arena->pages, i);
             cj_assert(page->base_address);
             cj_memory_zero(page->base_address, page->used);
@@ -1027,7 +1019,7 @@
                 cj_linked_list_push(arena->pages, next_page);
             }
         } else {
-            cj_assert(FALSE);
+            cj_assert(false);
         }
 
         last_page = (CJ_ArenaPage*)cj_linked_list_peek_tail(arena->pages); // tail might change
@@ -1127,7 +1119,7 @@
         return ret;
     }
 
-    JSON* JSON_BOOL(CJ_Arena* arena, Boolean value) {
+    JSON* JSON_BOOL(CJ_Arena* arena, bool value) {
         JSON* ret = cj_create(arena);
         ret->type = CJ_TYPE_BOOL;
         ret->cj_bool = value;
@@ -1358,8 +1350,8 @@
         CJ_TOKEN_STRING_LITERAL,             // "TESTING
         CJ_TOKEN_INTEGER_LITERAL,            // 6
         CJ_TOKEN_FLOAT_LITERAL,              // 2.523
-        CJ_TOKEN_TRUE,                       // true
-        CJ_TOKEN_FALSE,                      // false
+        CJ_TOKEN_true,                       // true
+        CJ_TOKEN_false,                      // false
         CJ_TOKEN_NULL,                       // null
         CJ_TOKEN_COUNT
     } CJ_TokenType;
@@ -1387,8 +1379,8 @@
         stringify(CJ_TOKEN_STRING_LITERAL),
         stringify(CJ_TOKEN_INTEGER_LITERAL),
         stringify(CJ_TOKEN_FLOAT_LITERAL),
-        stringify(CJ_TOKEN_TRUE),
-        stringify(CJ_TOKEN_FALSE),
+        stringify(CJ_TOKEN_true),
+        stringify(CJ_TOKEN_false),
         stringify(CJ_TOKEN_NULL),
     };
 
@@ -1420,7 +1412,7 @@
         CJ_Arena* arena;
     } CJ_Lexer;
 
-    internal Boolean isWhitespace(char c) {
+    internal bool isWhitespace(char c) {
         return c == ' ' || c == '\t' || c == '\r' || c == '\n';
     }
 
@@ -1485,7 +1477,7 @@
 
     internal CJ_TokenType getAcceptedKeyword(CJ_Lexer* lexer) {
         internal CJ_TokenType keywordTokenTable[] = {
-            CJ_TOKEN_TRUE, CJ_TOKEN_FALSE, CJ_TOKEN_NULL,
+            CJ_TOKEN_true, CJ_TOKEN_false, CJ_TOKEN_NULL,
         };
 
         internal char* keywords[] = {
@@ -1503,7 +1495,7 @@
         return CJ_TOKEN_ILLEGAL_TOKEN;
     }
 
-    internal Boolean isEOF(CJ_Lexer* lexer) {
+    internal bool isEOF(CJ_Lexer* lexer) {
         return lexer->right_pos >= lexer->source_size;
     }
 
@@ -1525,28 +1517,28 @@
         cj_vector_push_arena(lexer->arena, lexer->tokens, cj_tokenCreate(type, lexeme, lexer->line));
     }
 
-    internal Boolean consumeWhitespace(CJ_Lexer* lexer) {
+    internal bool consumeWhitespace(CJ_Lexer* lexer) {
         if (!isWhitespace(lexer->c)) {
-            return FALSE;
+            return false;
         }
 
         if (lexer->c == '\n') {
             lexer->line += 1;
         }
 
-        return TRUE;
+        return true;
     }
 
     internal void lexer_reportError(CJ_Lexer* lexer, char* msg) {
         char* scratch_buffer = cj_strview_to_cstr(getScratchBuffer(lexer));
         printf("Lexical Error: %s | Line: %d\n", scratch_buffer, (int)lexer->line);
         printf("Msg: %s\n", msg);
-        cj_assert(FALSE);
+        exit(-1);
     }
 
-    internal Boolean tryConsumeWord(CJ_Lexer* lexer) {
+    internal bool tryConsumeWord(CJ_Lexer* lexer) {
         if (!isalpha(lexer->c)) {
-        return FALSE;
+        return false;
         }
 
         while (isalnum(peekNthChar(lexer, 0)) || peekNthChar(lexer, 0) == '_') {
@@ -1557,7 +1549,7 @@
             consumeNextChar(lexer);
         }
 
-        return TRUE;
+        return true;
     }
 
     internal void tryConsumeStringLiteral(CJ_Lexer* lexer) {
@@ -1593,40 +1585,40 @@
     }
 
 
-    internal Boolean consumeLiteral(CJ_Lexer* lexer) {
+    internal bool consumeLiteral(CJ_Lexer* lexer) {
         if (isdigit(lexer->c) || (lexer->c == '-' && isdigit(peekNthChar(lexer, 0)))) {
             tryConsumeDigitLiteral(lexer);
-            return TRUE;
+            return true;
         } else if (lexer->c == '\"') {
             tryConsumeStringLiteral(lexer);
-            return TRUE;
+            return true;
         } else {
-            return FALSE;
+            return false;
         }
     }
 
-    internal Boolean consumeKeyword(CJ_Lexer* lexer) {
+    internal bool consumeKeyword(CJ_Lexer* lexer) {
         if (!tryConsumeWord(lexer)) {
-            return FALSE;
+            return false;
         }
 
         CJ_TokenType token_type = getAcceptedKeyword(lexer);
         if (token_type != CJ_TOKEN_ILLEGAL_TOKEN) {
             addToken(lexer, token_type);
-            return TRUE;
+            return true;
         }
 
-        return FALSE;
+        return false;
     }
 
-    internal Boolean consumeSyntax(CJ_Lexer* lexer) {
+    internal bool consumeSyntax(CJ_Lexer* lexer) {
         CJ_TokenType type = getAcceptedSyntax(lexer);
         if (type != CJ_TOKEN_ILLEGAL_TOKEN) {
             addToken(lexer, type);
-            return TRUE;
+            return true;
         }
 
-        return FALSE;
+        return false;
     }
 
     internal void lexer_consumeNextToken(CJ_Lexer* lexer) {
@@ -1689,7 +1681,7 @@
     internal void parser_reportError(CJ_Parser* parser, char* msg) {
         printf("CJ_Parser Error: %s | Line: %d\n", parser_peekNthToken(parser, 0).lexeme, (int)parser_peekNthToken(parser, 0).line);
         printf("Msg: %s\n", msg);
-        cj_assert(FALSE);
+        exit(-1);
     }
 
     UNUSED_FUNCTION internal void expect(CJ_Parser* parser, CJ_TokenType expected_type) {
@@ -1699,13 +1691,13 @@
         }
     }
 
-    UNUSED_FUNCTION internal Boolean parser_consumeOnMatch(CJ_Parser* parser, CJ_TokenType expected_type) {
+    UNUSED_FUNCTION internal bool parser_consumeOnMatch(CJ_Parser* parser, CJ_TokenType expected_type) {
         if (parser_peekNthToken(parser, 0).type == expected_type) {
             parser_consumeNextToken(parser);
-            return TRUE;
+            return true;
         }
 
-        return FALSE;
+        return false;
     }
 
     UNUSED_FUNCTION internal CJ_Token previousToken(CJ_Parser* parser) {
@@ -1723,7 +1715,7 @@
     // if you have a [] append JSON_Array
     // if you have ""
 
-    internal Boolean parseJSON(CJ_Parser* parser, CJ_Arena* arena, JSON** ret_state) {
+    internal bool parseJSON(CJ_Parser* parser, CJ_Arena* arena, JSON** ret_state) {
         if (parser->current >= cj_vector_count(parser->tokens)) {
             *ret_state = NULLPTR;
         }
@@ -1754,12 +1746,12 @@
         parser_consumeNextToken(parser);
 
         switch (parser->tok.type) {
-            case CJ_TOKEN_TRUE: {
-                *ret_state = JSON_BOOL(arena, TRUE);
+            case CJ_TOKEN_true: {
+                *ret_state = JSON_BOOL(arena, true);
             } break;
 
-            case CJ_TOKEN_FALSE: {
-                *ret_state = JSON_BOOL(arena, FALSE);
+            case CJ_TOKEN_false: {
+                *ret_state = JSON_BOOL(arena, false);
             } break;
 
             case CJ_TOKEN_MINUS: {
@@ -1790,12 +1782,12 @@
 
             case CJ_TOKEN_LEFT_BRACKET: { // Parse array
                 *ret_state = cj_array_create(arena);
-                return TRUE;
+                return true;
             } break;
 
             case CJ_TOKEN_LEFT_CURLY: { // Parse object
                 *ret_state = cj_create(arena);
-                return TRUE;
+                return true;
             } break;
         }
 
@@ -1817,10 +1809,10 @@
 
         JSON** states = NULLPTR;
         cj_stack_push_arena(arena, states, root);
-        while (cj_stack_empty(states) == FALSE) {
+        while (cj_stack_empty(states) == false) {
             JSON* current_state = cj_stack_peek(states);
             JSON* ret_state = current_state;
-            Boolean needs_to_recurse = parseJSON(&parser, arena, &ret_state);
+            bool needs_to_recurse = parseJSON(&parser, arena, &ret_state);
 
             if (ret_state == NULLPTR) { // error occured in parsing
                 return NULLPTR;

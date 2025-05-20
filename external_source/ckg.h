@@ -51,13 +51,11 @@
     #undef CLAMP
     #undef local_persist
     #undef internal
-    #undef OFFSET_OF
     #undef FIRST_DIGIT
     #undef GET_BIT
     #undef SET_BIT
     #undef UNSET_BIT
     #undef ArrayCount
-    #undef PLATFORM_MAX_PATH
     #undef PLATFORM_WINDOWS
     #undef PLATFORM_APPLE
     #undef PLATFORM_LINUX
@@ -65,20 +63,19 @@
     #undef CRASH
     #undef UNUSED_FUNCTION
 
-    #include <stdint.h>
     #include <stdio.h>
+    #include <stdbool.h>
+    #include <stdint.h>
     #include <stdarg.h>
     #include <stdlib.h>
-    #include <stdbool.h>
+    #include <stddef.h>
 
     typedef int8_t  s8;
     typedef int16_t s16;
-    typedef int32_t s32;
     typedef int64_t s64;
 
     typedef uint8_t  u8;
     typedef uint16_t u16;
-    typedef uint32_t u32;
     typedef uint64_t u64;
 
     #define NULLPTR 0
@@ -100,21 +97,12 @@
     #define local_persist static
     #define internal static
 
-
-    CKG_API void U32_EndianSwap(u32* number_to_endian_swap);
-    CKG_API void U64_EndianSwap(u64* number_to_endian_swap);
-
-    // Date: July 12, 2024
-    // TODO(Jovanni): Test this to make sure its actually works but it makes sense to me
-    #define OFFSET_OF(type, member) sizeof((size_t)(&(((type*)0)->member)))
     #define FIRST_DIGIT(number) ((int)number % 10);
     #define GET_BIT(number, bit_to_check) ((number & (1 << bit_to_check)) >> bit_to_check)
     #define SET_BIT(number, bit_to_set) number |= (1 << bit_to_set);
     #define UNSET_BIT(number, bit_to_unset) number &= (~(1 << bit_to_unset));
 
-    #define ArrayCount(array) (sizeof(array) / sizeof(array[0]))
-
-    #define PLATFORM_MAX_PATH 256
+    #define ArrayCount(array) (int)(sizeof(array) / sizeof(array[0]))
 
     #if defined(_WIN32)
         #define NOMINMAX
@@ -124,6 +112,7 @@
         #define OS_DELIMITER '\\'
         #define CRASH __debugbreak()
     #elif defined(__APPLE__)
+        #include <dlfcn.h>
         #define PLATFORM_APPLE
         #define OS_DELIMITER '/'
         #define CRASH __builtin_trap()
@@ -138,19 +127,13 @@
 
     #if defined(__clang__)
         #define UNUSED_FUNCTION __attribute__((used))
-        #define WRITE_FENCE() __asm__ volatile("" ::: "memory"); __asm__ volatile("sfence" ::: "memory")
-        #define READ_FENCE() __asm__ volatile("" ::: "memory");
     #elif defined(__GNUC__) || defined(__GNUG__)
         #define UNUSED_FUNCTION __attribute__((used))
-        #define WRITE_FENCE() __asm__ volatile("" ::: "memory"); __asm__ volatile("sfence" ::: "memory")
-        #define READ_FENCE() __asm__ volatile("" ::: "memory");
     #elif defined(_MSC_VER)
         #define UNUSED_FUNCTION
-        #define WRITE_FENCE() _WriteBarrier(); _mm_sfence()
-        #define READ_FENCE() _ReadBarrier()
     #endif
 
-    CKG_API void ckg_stack_trace_dump();
+    CKG_API void ckg_stack_trace_dump(const char* function, const char* file, int line);
 #endif
 
 #if defined(CKG_INCLUDE_LOGGER)
@@ -177,34 +160,17 @@
     #define CKG_PLATFORM_CHARACTER_LIMIT 512
 
     // Log Levels
-    #define LOG_LEVEL_FATAL 0
-    #define LOG_LEVEL_ERROR 1
-    #define LOG_LEVEL_WARN 2
-    #define LOG_LEVEL_DEBUG 3
-    #define LOG_LEVEL_SUCCESS 4
-    #define LOG_LEVEL_PRINT 5
-    #define LOG_LEVEL_COUNT 6
-    typedef u8 CKG_LogLevel;
+    typedef enum CKG_LogLevel {
+        LOG_LEVEL_FATAL,
+        LOG_LEVEL_ERROR,
+        LOG_LEVEL_WARN,
+        LOG_LEVEL_DEBUG,
+        LOG_LEVEL_SUCCESS,
+        LOG_LEVEL_PRINT,
+        LOG_LEVEL_COUNT
+    } CKG_LogLevel;
 
-    internal char ckg_log_level_strings[LOG_LEVEL_COUNT][CKG_LOG_LEVEL_CHARACTER_LIMIT] = {
-        "[ FATAL ]: ",
-        "[ ERROR ]: ",
-        "[WARNING]: ",
-        "[ DEBUG ]: ",
-        "[SUCCESS]: ",
-        "",
-    };
-
-    internal char* ckg_log_level_format[LOG_LEVEL_COUNT] = {
-        CKG_RED_BACKGROUND,
-        CKG_RED,
-        CKG_PURPLE,
-        CKG_BLUE,
-        CKG_GREEN,
-        CKG_COLOR_RESET
-    };
-
-    CKG_API void MACRO_ckg_log_output(CKG_LogLevel log_level, char* message, ...);
+    CKG_API void MACRO_ckg_log_output(CKG_LogLevel log_level, const char* message, ...);
     #define ckg_log_output(log_level, message, ...) MACRO_ckg_log_output(log_level, message, ##__VA_ARGS__)
     #define CKG_LOG_PRINT(message, ...) ckg_log_output(LOG_LEVEL_PRINT, message, ##__VA_ARGS__)
     #define CKG_LOG_SUCCESS(message, ...) ckg_log_output(LOG_LEVEL_SUCCESS, message, ##__VA_ARGS__)
@@ -215,43 +181,28 @@
 #endif
 
 #if defined(CKG_INCLUDE_ASSERT)
+    CKG_API void MACRO_ckg_assert(bool expression,const char* function, const char* file, int line);
+    CKG_API void MACRO_ckg_assert_msg(bool expression, const char* function, const char* file, int line, const char* msg, ...);
+
     #define CKG_ASSERT_ENABLED true
     #if CKG_ASSERT_ENABLED == true 
-        #define ckg_assert(expression)                                     \
-            do {                                                           \
-                if (!(expression)) {                                       \
-                    ckg_stack_trace_dump();                                \
-                    char ckg__msg[] = "Func: %s, File: %s:%d\n";           \
-                    CKG_LOG_FATAL(ckg__msg, __func__, __FILE__, __LINE__); \
-                    CRASH;                                                 \
-                }                                                          \
-            } while (false)                                                \
-
-        #define ckg_assert_msg(expression, message, ...)	               \
-            do {                                                           \
-                if (!(expression)) {                                       \
-                    ckg_stack_trace_dump();                                \
-                    char ckg__msg[] = "Func: %s, File: %s:%d\n";           \
-                    CKG_LOG_FATAL(ckg__msg, __func__, __FILE__, __LINE__); \
-                    CKG_LOG_FATAL(message, ##__VA_ARGS__);                 \
-                    CRASH;                                                 \
-                }                                                          \
-            } while (false)                                                \
-
+        #define ckg_assert(expression) MACRO_ckg_assert((expression), __func__, __FILE__, __LINE__)
+        #define ckg_assert_msg(expression, message, ...) MACRO_ckg_assert_msg((expression), __func__, __FILE__, __LINE__, message, ##__VA_ARGS__)
     #else
-            #define ckg_assert(expression)
-            #define ckg_assert_msg(expression, message, ...)
+        #define ckg_assert(expression)
+        #define ckg_assert_msg(expression, message, ...)
     #endif
 #endif
 
 #if defined(CKG_INCLUDE_ERRORS)
+
     /*
     +------------+----------------------------+
     | Error Type |        Error Code          |
     | (4bits)    |         (28bits)           |
     +------------+----------------------------+
     */
-
+    // this only allows for 4 types (CKG_ERROR_TYPE_COUNT <= 4)
     #define CKG_ERROR_TYPE_COUNT 2
     #define CKG_ERROR_TYPE_MASK (0b1111 << 28)
 
@@ -278,7 +229,7 @@
         CKG_ERROR_ARGS_COUNT = 12
     } CKG_Error;
 
-    CKG_API char* ckg_error_str(CKG_Error error_code);
+    CKG_API const char* ckg_error_str(CKG_Error error_code);
 #endif
 
 #if defined(CKG_INCLUDE_MEMORY)
@@ -311,15 +262,15 @@
     CKG_API void ckg_memory_copy(void* source, void* destination, size_t source_size_in_bytes, size_t destination_size_in_bytes);
     CKG_API void ckg_memory_zero(void* data, size_t data_size_in_bytes);
 
-    CKG_API void MACRO_ckg_memory_delete_index(void* data, size_t number_of_elements, size_t data_capacity, size_t element_size_in_bytes, size_t index);
-    CKG_API void MACRO_ckg_memory_insert_index(void* data, size_t number_of_elements, size_t data_capacity, size_t element_size_in_bytes, size_t index);
+    CKG_API void MACRO_ckg_memory_delete_index(void* data, int number_of_elements, int data_capacity, size_t element_size_in_bytes, int index);
+    CKG_API void MACRO_ckg_memory_insert_index(void* data, int number_of_elements, int data_capacity, size_t element_size_in_bytes, int index);
 
     #define ckg_memory_fill(_buffer, _buffer_count, _fill_element) \
-    {														       \
+    do {														   \
         for (int i = 0; i < (int)_buffer_count; i++) { 			   \
             _buffer[i] = _fill_element;                            \
         }                                                  	       \
-    }                
+    } while(0)                                                     \
     
     #ifdef __cplusplus
         #define ckg_free(data) data = (decltype(data))MACRO_ckg_free(data)
@@ -348,7 +299,7 @@
         size_t used_save_point;
         size_t used;
         u8 alignment;
-        u32 flags;
+        int flags;
     } CKG_Arena;
     
     /**
@@ -360,7 +311,7 @@
      * @param alignment
      * @return CKG_API* 
      */
-    CKG_API CKG_Arena ckg_arena_create_custom(void* memory, size_t allocation_size, u32 flags, u8 alignment);
+    CKG_API CKG_Arena ckg_arena_create_custom(void* memory, size_t allocation_size, int flags, u8 alignment);
     CKG_API void ckg_arena_free(CKG_Arena* arena);
     CKG_API void* ckg_arena_push_custom(CKG_Arena* arena, size_t element_size);	
     CKG_API void ckg_arena_begin_temp(CKG_Arena* arena);
@@ -385,38 +336,48 @@
 	 * @param s1 
 	 * @return char* 
 	 */
-	CKG_API char*  ckg_str_alloc(char* s1, size_t length);
-    CKG_API size_t ckg_cstr_length(char* c_string);
-    CKG_API void   ckg_str_clear(char* s1, size_t length);
-    CKG_API void   ckg_str_copy(char* dest, size_t dest_capacity, char* source, size_t source_length);
-	CKG_API void   ckg_str_append(char* str, size_t str_length, size_t str_capacity, char* to_append, size_t to_append_length);
-	CKG_API void   ckg_str_append_char(char* str, size_t str_length, size_t str_capacity, char to_append);
-	CKG_API void   ckg_str_insert(char* str, size_t str_length, size_t str_capacity, char* to_insert, size_t to_insert_length, size_t index);
-	CKG_API void   ckg_str_insert_char(char* str, size_t str_length, size_t str_capacity, char to_insert, size_t index);
-    CKG_API void   ckg_str_reverse(char* str, size_t str_length, char* returned_reversed_string_buffer, size_t reversed_buffer_capacity);
-    CKG_API char*  ckg_str_va_sprint(u64* str_length, char* fmt, va_list args);
-    CKG_API char*  MACRO_ckg_str_sprint(u64* str_length_ptr_back, char* fmt, ...);
+	CKG_API char* ckg_str_alloc(char* s1, u64 length);
+    CKG_API u64   ckg_cstr_length(char* c_string);
+    CKG_API void  ckg_str_clear(char* s1, u64 length);
+    CKG_API void  ckg_str_copy(char* dest, size_t dest_capacity, char* source, u64 source_length);
+	CKG_API void  ckg_str_append(char* str, u64 str_length, size_t str_capacity, char* to_append, u64 to_append_length);
+	CKG_API void  ckg_str_append_char(char* str, u64 str_length, size_t str_capacity, char to_append);
+	CKG_API void  ckg_str_insert(char* str, u64 str_length, size_t str_capacity, char* to_insert, u64 to_insert_length, u64 index);
+	CKG_API void  ckg_str_insert_char(char* str, u64 str_length, size_t str_capacity, char to_insert, u64 index);
+    CKG_API void  ckg_str_reverse(char* str, u64 str_length, char* returned_reversed_string_buffer, size_t reversed_buffer_capacity);
+    CKG_API char* ckg_str_va_sprint(u64* str_length, const char* fmt, va_list args);
+    CKG_API char* MACRO_ckg_str_sprint(u64* str_length_ptr_back, const char* fmt, ...);
     #define ckg_str_sprint(str_length_ptr_back, fmt, ...) MACRO_ckg_str_sprint(str_length_ptr_back, fmt, ##__VA_ARGS__)
 
-    CKG_API bool ckg_str_equal(char* s1, size_t s1_length, char* s2, size_t s2_length);
-    CKG_API bool ckg_str_contains(char* s1, size_t s1_length, char* contains, size_t contains_length);
-	CKG_API s64  ckg_str_index_of(char* str, size_t str_length, char* substring, size_t substring_length);
-	CKG_API s64  ckg_str_last_index_of(char* str, size_t str_length, char* substring, size_t substring_length);
-	CKG_API bool ckg_str_starts_with(char* str, size_t str_length, char* starts_with, size_t starts_with_length);
-	CKG_API bool ckg_str_ends_with(char* str, size_t str_length, char* ends_with, size_t ends_with_length);
+    CKG_API bool ckg_str_equal(char* s1, u64 s1_length, char* s2, u64 s2_length);
+    CKG_API bool ckg_str_contains(char* s1, u64 s1_length, char* contains, u64 contains_length);
+    
+    /**
+     * @brief Check the return value of -1 to know if there is not a substring in the string provided
+     * 
+     * @param str 
+     * @param str_length 
+     * @param substring 
+     * @param substring_length 
+     * @return s64 
+     */
+	CKG_API s64  ckg_str_index_of(char* str, u64 str_length, char* substring, u64 substring_length);
+	CKG_API s64  ckg_str_last_index_of(char* str, u64 str_length, char* substring, u64 substring_length);
+	CKG_API bool ckg_str_starts_with(char* str, u64 str_length, char* starts_with, u64 starts_with_length);
+	CKG_API bool ckg_str_ends_with(char* str, u64 str_length, char* ends_with, u64 ends_with_length);
 
 
     typedef struct CKG_StringView {
         char* data;
-        size_t length;
+        u64 length;
     } CKG_StringView;
     
-    CKG_StringView  ckg_sv_create(char* data, size_t length);
+    CKG_StringView  ckg_sv_create(char* data, u64 length);
     CKG_StringView  ckg_sv_between_delimiters(char* str, u64 str_length, char* start_delimitor, u64 start_delimitor_length, char* end_delimitor, u64 end_delimitor_length);
-    CKG_StringView* ckg_sv_split(char* data, size_t length, char* delimitor, size_t delimitor_length);
+    CKG_StringView* ckg_sv_split(char* data, u64 length, char* delimitor, u64 delimitor_length);
     
     #define CKG_SV_LIT(literal) (CKG_StringView){literal, sizeof(literal) - 1}
-    #define CKG_SV_EMPTY() (CKG_StringView){"", 0}
+    #define CKG_SV_EMPTY() (CKG_StringView){NULLPTR, 0}
     #define CKG_LIT_ARG(literal) literal, sizeof(literal) - 1
 
     #define ckg_sv_equal(sv1, sv2) ckg_str_equal(sv1.data, sv1.length, sv2.data, sv2.length)
@@ -441,20 +402,20 @@
     // ========== START CKG_VECTOR ==========
     //
     typedef struct CKG_VectorHeader {
-        size_t count;
-        size_t capacity;
+        int count;
+        int capacity;
         size_t element_size;
     } CKG_VectorHeader;
 
-    CKG_API void* ckg_vector_grow(void* vector, size_t element_size, size_t capacity);
+    CKG_API void* ckg_vector_grow(void* vector, size_t element_size, int capacity);
     CKG_API void* MACRO_ckg_vector_free(void* vector);
 
     #define VECTOR_DEFAULT_CAPACITY 1
     #define ckg_vector_header_base(vector) ((CKG_VectorHeader*)(((u8*)vector) - sizeof(CKG_VectorHeader)))
-    #define ckg_vector_count(vector) (*ckg_vector_header_base(vector)).count
-    #define ckg_vector_capacity(vector) (*ckg_vector_header_base(vector)).capacity
+    #define ckg_vector_count(vector) (ckg_assert(vector), (*ckg_vector_header_base(vector)).count)
+    #define ckg_vector_capacity(vector) (ckg_assert(vector), (*ckg_vector_header_base(vector)).capacity)
 
-    #define ckg_stack_count(stack) (*ckg_vector_header_base(stack)).count
+    #define ckg_stack_count(stack) (ckg_assert(stack), (*ckg_vector_header_base(stack)).count)
 
     #ifdef __cplusplus
         #define ckg_vector_push(vector, element) vector = (decltype(vector))ckg_vector_grow(vector, sizeof(vector[0]), 0); vector[ckg_vector_header_base(vector)->count++] = element
@@ -466,9 +427,9 @@
     
     #define ckg_vector_free(vector) vector = MACRO_ckg_vector_free(vector)
     #define ckg_stack_free(stack) stack = MACRO_ckg_vector_free(stack)
-    #define ckg_stack_pop(stack) stack[--ckg_vector_header_base(stack)->count]
-    #define ckg_stack_peek(stack) stack[ckg_stack_count(stack) - 1]
-    #define ckg_stack_empty(stack) (ckg_stack_count(stack) == 0)
+    #define ckg_stack_pop(stack) (ckg_assert(stack), stack[--ckg_vector_header_base(stack)->count])
+    #define ckg_stack_peek(stack) (ckg_assert(stack), stack[ckg_stack_count(stack) - 1])
+    #define ckg_stack_empty(stack) (ckg_assert(stack), (ckg_stack_count(stack) == 0))
     //
     // ========== END CKG_VECTOR ==========
     //
@@ -484,20 +445,31 @@
         int capacity;
         size_t element_size;
     } CKG_RingBufferHeader;
-    
+
     void* ckg_ring_buffer_create(size_t element_size, int capacity);
     void* MACRO_ckg_ring_buffer_free(void* buffer);
-    #define ckg_ring_buffer_free(buffer) buffer = MACRO_ckg_ring_buffer_free(buffer)
-    #define ckg_ring_buffer_header_base(buffer) ((CKG_RingBufferHeader*)(((char*)buffer) - sizeof(CKG_RingBufferHeader)))
-    #define ckg_ring_buffer_read(buffer) (*ckg_ring_buffer_header_base(buffer)).read
-    #define ckg_ring_buffer_write(buffer) (*ckg_ring_buffer_header_base(buffer)).write
-    #define ckg_ring_buffer_count(buffer) (*ckg_ring_buffer_header_base(buffer)).count
-    #define ckg_ring_buffer_capacity(buffer) (*ckg_ring_buffer_header_base(buffer)).capacity
+    #define ckg_ring_buffer_header_base(buffer) ((CKG_RingBufferHeader*)(((char*)(buffer)) - sizeof(CKG_RingBufferHeader)))
 
-    #define ckg_ring_buffer_full(buffer) (ckg_ring_buffer_count(buffer) == ckg_ring_buffer_capacity(buffer))
+    #define ckg_ring_buffer_free(buffer) buffer = MACRO_ckg_ring_buffer_free(buffer)
+    #define ckg_ring_buffer_read(buffer)         (ckg_ring_buffer_header_base(buffer)->read)
+    #define ckg_ring_buffer_write(buffer)        (ckg_ring_buffer_header_base(buffer)->write)
+    #define ckg_ring_buffer_count(buffer)        (ckg_assert(buffer != NULLPTR), ckg_ring_buffer_header_base(buffer)->count)
+    #define ckg_ring_buffer_capacity(buffer)     (ckg_assert(buffer != NULLPTR), ckg_ring_buffer_header_base(buffer)->capacity)
+    #define ckg_ring_buffer_element_size(buffer) (ckg_assert(buffer != NULLPTR), ckg_ring_buffer_header_base(buffer)->element_size)
+
     #define ckg_ring_buffer_empty(buffer) (ckg_ring_buffer_count(buffer) == 0)
-    #define ckg_ring_buffer_enqueue(buffer, element) ckg_assert_msg(!ckg_ring_buffer_full(buffer), "Ring buffer is full!\n"); buffer[ckg_ring_buffer_write(buffer)] = element; ckg_ring_buffer_header_base(buffer)->count++; ckg_ring_buffer_header_base(buffer)->write = (ckg_ring_buffer_write(buffer) + 1) % ckg_ring_buffer_capacity(buffer);
-    #define ckg_ring_buffer_dequeue(buffer) buffer[ckg_ring_buffer_read(buffer)]; --ckg_ring_buffer_header_base(buffer)->count; ckg_ring_buffer_header_base(buffer)->read = (ckg_ring_buffer_read(buffer) + 1) % ckg_ring_buffer_capacity(buffer); ckg_assert_msg(ckg_ring_buffer_count(buffer) > -1, "Ring buffer is empty!\n");    
+    #define ckg_ring_buffer_full(buffer)  (ckg_ring_buffer_count(buffer) == ckg_ring_buffer_capacity(buffer))
+
+    #define ckg_ring_buffer_enqueue(buffer, element)                                                                         \
+    do {                                                                                                                     \
+        ckg_assert_msg(!ckg_ring_buffer_full(buffer), "Ring buffer is overwriting unread memory!\n");                        \
+        (buffer)[ckg_ring_buffer_write(buffer)] = (element);                                                                 \
+        ckg_ring_buffer_header_base(buffer)->count++;                                                                        \
+        ckg_ring_buffer_header_base(buffer)->write = (int)((ckg_ring_buffer_write(buffer) + 1) % ckg_ring_buffer_capacity(buffer)); \
+    } while(0)                                                                                                               \
+
+    #define ckg_ring_buffer_dequeue(buffer) buffer[ckg_ring_buffer_read(buffer)]; ckg_assert_msg(!ckg_ring_buffer_empty(buffer), "Ring buffer is empty!\n"); ckg_ring_buffer_header_base(buffer)->count--; ckg_ring_buffer_header_base(buffer)->read = (ckg_ring_buffer_read(buffer) + 1) % ckg_ring_buffer_capacity(buffer)
+
     //
     // ========== END CKG_CircularBuffer ==========
     //
@@ -522,14 +494,14 @@
     } CKG_LinkedList;
 
     CKG_API CKG_LinkedList* MACRO_ckg_linked_list_create(size_t element_size_in_bytes, bool is_pointer_type);
-    CKG_API CKG_Node* ckg_linked_list_insert(CKG_LinkedList* linked_list, size_t index, void* data);
-    CKG_API CKG_Node* ckg_linked_list_get_node(CKG_LinkedList* linked_list, size_t index);
-    CKG_API void* ckg_linked_list_get(CKG_LinkedList* linked_list, size_t index);
+    CKG_API CKG_Node* ckg_linked_list_insert(CKG_LinkedList* linked_list, u64 index, void* data);
+    CKG_API CKG_Node* ckg_linked_list_get_node(CKG_LinkedList* linked_list, u64 index);
+    CKG_API void* ckg_linked_list_get(CKG_LinkedList* linked_list, u64 index);
     CKG_API void* ckg_linked_list_peek_head(CKG_LinkedList* linked_list);
     CKG_API void* ckg_linked_list_peek_tail(CKG_LinkedList* linked_list);
     CKG_API CKG_Node* ckg_linked_list_push(CKG_LinkedList* linked_list, void* data);
     CKG_API CKG_Node ckg_linked_list_pop(CKG_LinkedList* linked_list);
-    CKG_API CKG_Node ckg_linked_list_remove(CKG_LinkedList* linked_list, size_t index);
+    CKG_API CKG_Node ckg_linked_list_remove(CKG_LinkedList* linked_list, u64 index);
     CKG_API void* MACRO_ckg_linked_list_free(CKG_LinkedList* linked_list);
     CKG_API size_t ckg_linked_list_node_to_index(CKG_LinkedList* linked_list, CKG_Node* address);
 
@@ -542,6 +514,153 @@
     #endif
     //
     // ========== END CKG_LinkedList ==========
+    //
+
+
+    //
+    // ========== START CKG_HashMap ==========
+    //
+    typedef u64 (*CKG_HashFunction)(void* data, u64 size);
+
+    typedef struct CKG_HashMapMeta {
+        int key_offset;
+        int value_offset;
+        int entry_offset;
+        int entry_key_offset;
+        int entry_value_offset;
+        int entry_filled_offset;
+
+        int key_size;
+        int value_size;
+        int entry_size;
+
+        u64 capacity;
+        u64 count;
+        
+        bool key_is_ptr;
+        CKG_HashFunction hash_fn;
+    } CKG_HashMapMeta;
+
+
+    #define CKG_HashMapEntry(KeyType, ValueType) \
+    struct {                                     \
+        KeyType key;                             \
+        ValueType value;                         \
+        bool filled;                             \
+    }                                            \
+
+    // Date: May 15, 2025
+    // NOTE(Jovanni): Its important to note that temp_key and temp_value are used on:
+    // insert to act as a stack object for the value or key literal
+    // THIS MIGHT HAVE TO BE PACKED!
+    #define CKG_HashMap(KeyType, ValueType)            \
+    struct {                                           \
+        CKG_HashMapMeta meta;                          \
+        KeyType temp_key;                              \
+        ValueType temp_value;                          \
+        CKG_HashMapEntry(KeyType, ValueType)* entries; \
+    }                                                  \
+
+    #define CKG_HASHMAP_DEFAULT_CAPACITY 4
+    #define CKG_HASHMAP_DEFAULT_LOAD_FACTOR 0.70f
+
+    u64 siphash24(void* source, u64 source_size);
+    u64 ckg_string_hash(void* str, u64 str_length);
+    u64 ckg_string_view_hash(void* view, u64 str_length);
+    u64 ckg_string_view(void* str, u64 str_length);
+
+    float ckg_hashmap_load_factor(void* map);
+    void ckg_hashmap_grow(void* map);
+    float ckg_hashmap_load_factor(void* map);
+    
+    bool ckg_hashmap_has_helper(void* map);
+    void ckg_hashmap_get_helper(void* map);
+    void ckg_hashmap_put_helper(void* map);
+    void ckg_hashmap_pop_helper(void* map);
+
+    /**
+     * @brief Inserts a key-value pair into a generic hashmap.
+     *
+     * Supports value-type keys (e.g., integers, structs without pointers) via `ckg_hashmap_put`,
+     * and pointer-type keys via `ckg_hashmap_put_key_ptr`.
+     *
+     * A **trivially hashable struct**:
+     * - Contains only value types (e.g., int, float, char).
+     * - Does **not** contain any pointers.
+     * - Can be safely hashed via byte-wise hashing.
+     *
+     * If your key is a pointer (e.g., `char *`, `void *`), use `ckg_hashmap_put_key_ptr`.
+     * For non-trivial structs (e.g., structs with pointers), you may also define a custom hash function
+     * and assign it to the hashmap's `meta.hash_fn` field.
+     *
+     * @example
+     *     typedef struct { int x, y; } Point; // Trivially hashable
+     *     ckg_hashmap_put(map, (Point){1, 2}, 42);
+     *
+     *     const char *name = "Alice";
+     *     ckg_hashmap_put_key_ptr(map, name, 100); // Required for pointer keys
+     */
+   #define ckg_hashmap_init_with_hash(map, KeyType, ValueType, __key_is_ptr, __hash_function)    \
+    do {                                                                                         \
+        map = ckg_alloc(sizeof(CKG_HashMap(KeyType, ValueType)));                                \
+        map->meta.key_offset = offsetof(CKG_HashMap(KeyType, ValueType), temp_key);              \
+        map->meta.value_offset = offsetof(CKG_HashMap(KeyType, ValueType), temp_value);          \
+        map->meta.entry_offset = offsetof(CKG_HashMap(KeyType, ValueType), entries);             \
+        map->meta.entry_key_offset = offsetof(CKG_HashMapEntry(KeyType, ValueType), key);        \
+        map->meta.entry_value_offset = offsetof(CKG_HashMapEntry(KeyType, ValueType), value);    \
+        map->meta.entry_filled_offset = offsetof(CKG_HashMapEntry(KeyType, ValueType), filled);  \
+        map->meta.key_size = sizeof(KeyType);                                                    \
+        map->meta.value_size = sizeof(ValueType);                                                \
+        map->meta.entry_size = sizeof(CKG_HashMapEntry(KeyType, ValueType));                     \
+        map->meta.capacity = CKG_HASHMAP_DEFAULT_CAPACITY;                                       \
+        map->meta.count = 0;                                                                     \
+        map->meta.hash_fn = __hash_function;                                                     \
+        map->meta.key_is_ptr = __key_is_ptr;                                                     \
+        map->entries = ckg_alloc(map->meta.entry_size * map->meta.capacity);                     \
+    } while(0)                                                                                   \
+
+
+    #define ckg_hashmap_init_siphash(map, KeyType, ValueType) ckg_hashmap_init_with_hash(map, KeyType, ValueType, false, siphash24)
+    #define ckg_hashmap_init_string_hash(map, KeyType, ValueType) ckg_hashmap_init_with_hash(map, KeyType, ValueType, true, ckg_string_hash)
+    #define ckg_hashmap_init_string_view_hash(map, KeyType, ValueType) ckg_hashmap_init_with_hash(map, KeyType, ValueType, false, ckg_string_view_hash)
+
+
+    #define ckg_hashmap_put(map, __key, __value) \
+    do {                                         \
+        (map)->temp_key = (__key);               \
+        (map)->temp_value = (__value);           \
+        ckg_hashmap_put_helper((u8*)(map));      \
+    } while(0)                                   \
+
+    #define ckg_hashmap_has(map, key)       \
+    (                                       \
+        (map)->temp_key = (key),            \
+        ckg_hashmap_has_helper((u8*)(map))  \
+    )                                       \
+
+
+    #define ckg_hashmap_get(map, key)       \
+    (                                       \
+        (map)->temp_key = (key),            \
+        ckg_hashmap_get_helper((u8*)(map)), \
+        (map)->temp_value                   \
+    )                                       \
+
+    #define ckg_hashmap_pop(map, key)       \
+    (                                       \
+        (map)->temp_key = (key),            \
+        ckg_hashmap_pop_helper((u8*)(map)), \
+        (map)->temp_value                   \
+    )         
+
+    #define ckg_hashmap_free(map)                                 \
+    do {                                                          \
+        ckg_free(map->entries);                                   \
+        ckg_free(map);                                            \
+    } while(0)                                                    \
+
+    //
+    // ========== END CKG_HashMap ==========
     //
 #endif 
 
@@ -639,83 +758,199 @@
 //
 
 #if defined(CKG_IMPL_TYPES)
-    void U32_EndianSwap(u32* number_to_endian_swap) {
-        u32 temp = *number_to_endian_swap;
-        
-        u32 b0 = (temp >> 0) & 0xFF;
-        u32 b1 = (temp >> 8) & 0xFF;
-        u32 b2 = (temp >> 16) & 0xFF;
-        u32 b3 = (temp >> 24) & 0xFF;
-
-        *number_to_endian_swap = (b0 << 24)|(b1 << 16)|(b2 << 8)|(b3 << 0);
-    } 
-
-    void U64_EndianSwap(u64* number_to_endian_swap) {
-        u64 temp = *number_to_endian_swap;
-        
-        u64 b0 = (temp >> 0) & 0xFF;
-        u64 b1 = (temp >> 8) & 0xFF;
-        u64 b2 = (temp >> 16) & 0xFF;
-        u64 b3 = (temp >> 24) & 0xFF;
-        u64 b4 = (temp >> 32) & 0xFF;
-        u64 b5 = (temp >> 40) & 0xFF;
-        u64 b6 = (temp >> 48) & 0xFF;
-        u64 b7 = (temp >> 56) & 0xFF;
-
-        *number_to_endian_swap = (b0 << 56)|(b1 << 48)|(b2 << 40)|(b3 << 32)|(b4 << 24)|(b5 << 16)|(b6 << 8)|(b7 << 0);
-    }
-
-    #if defined(_MSC_VER )
+    #if defined(PLATFORM_WINDOWS) && defined(_MSC_VER)
         #include <DbgHelp.h>
         #pragma comment(lib, "dbghelp")
-        void ckg_stack_trace_dump() {
+
+        static const char* GetModuleNameFromAddress(HANDLE process, DWORD64 address) {
+            static char moduleName[MAX_PATH];
+            IMAGEHLP_MODULE64 moduleInfo;
+            ZeroMemory(&moduleInfo, sizeof(moduleInfo));
+            moduleInfo.SizeOfStruct = sizeof(moduleInfo);
+            if (SymGetModuleInfo64(process, address, &moduleInfo)) {
+                strncpy_s(moduleName, sizeof(moduleName), moduleInfo.ModuleName, _TRUNCATE);
+                return moduleName;
+            }
+            return "Unknown Module";
+        }
+
+        void ckg_stack_trace_dump(const char* function, const char* file, int line) {
             CKG_LOG_PRINT("------------------ Error Stack Trace ------------------\n");
-            // Date: July 02, 2024
-            // NOTE(Jovanni): This only works for windows and when debug symbols are compiled into the program
-            void *stack[100];
-            unsigned short number_of_captured_frames;
-            SYMBOL_INFO *symbol;
-            HANDLE process;
+            void* stack[100];
+            unsigned short max_frames = 100;
+            unsigned short frames_captured;
+            HANDLE process = GetCurrentProcess();
+            BOOL sym_initialized = FALSE;
 
-            process = GetCurrentProcess();
-            SymInitialize(process, NULLPTR, true);
-
-            number_of_captured_frames = CaptureStackBackTrace(0, 100, stack, NULLPTR);
-            symbol = (SYMBOL_INFO *)ckg_alloc(sizeof(SYMBOL_INFO) + 256 * sizeof(char));
-            symbol->MaxNameLen = 255;
-            symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
-
-            int count = 0;
-            for (int i = number_of_captured_frames - 4; i > 0; i--) {
-                DWORD64 displacement = 0;
-                if (SymFromAddr(process, (DWORD64)(stack[i]), &displacement, symbol)) {
-                    DWORD displacementLine = 0;
-                    IMAGEHLP_LINE64 line;
-                    line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
-                    if (SymGetLineFromAddr64(process, (DWORD64)(stack[i]), &displacementLine, &line)) {
-                        printf("%d: %s - %s:%d\n", count, symbol->Name, line.FileName, line.LineNumber);
-                    } else {
-                        printf("%d: %s\n", count, symbol->Name);
-                    }
-                }
-                count++;
+            sym_initialized = SymInitialize(process, NULL, TRUE);
+            if (!sym_initialized) {
+                printf("Failed to initialize symbol handler: %lu\n", GetLastError());
+                printf("------------------ Error Stack Trace End ------------------\n");
+                return;
             }
 
-            ckg_free(symbol);
-            CKG_LOG_PRINT("------------------ Error Stack Trace End ------------------\n");
+            frames_captured = CaptureStackBackTrace(0, max_frames, stack, NULL);
+            if (frames_captured == 0) {
+                printf("Failed to capture stack trace\n");
+                SymCleanup(process);
+                printf("------------------ Error Stack Trace End ------------------\n");
+                return;
+            }
+
+            SYMBOL_INFO* symbol = (SYMBOL_INFO*)malloc(sizeof(SYMBOL_INFO) + (MAX_SYM_NAME * sizeof(char)));
+            if (!symbol) {
+                printf("Error allocating symbol info buffer\n");
+                SymCleanup(process);
+                printf("------------------ Error Stack Trace End ------------------\n");
+                return;
+            }
+
+            symbol->MaxNameLen = MAX_SYM_NAME;
+            symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+
+            IMAGEHLP_LINE64 line_info;
+            line_info.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+            
+            int skip = 2;
+            for (int i = skip; i < frames_captured - 6; i++) {
+                DWORD64 address = (DWORD64)stack[i];
+                DWORD64 displacement = 0;
+                DWORD line_displacement = 0;
+
+                if (i == skip) {
+                    printf("0: %s - %s:%u\n", function, file, line);
+                    continue;
+                } 
+                
+                if (SymFromAddr(process, address, &displacement, symbol)) {
+                    if (SymGetLineFromAddr64(process, address, &line_displacement, &line_info)) {
+                        printf("%d: %s - %s:%u\n", i - skip, symbol->Name, line_info.FileName, (int)line_info.LineNumber);
+                    } else {
+                        const char* module_name = GetModuleNameFromAddress(process, address);
+                        printf("%d: %s [%s+0x%llx]\n", i - skip, symbol->Name, module_name, displacement);
+                    }
+                } else {
+                    printf("%d: [Unknown symbol] 0x%p (Error: %lu)\n", i - skip, stack[i], GetLastError());
+                }
+            }
+
+            free(symbol);
+            SymCleanup(process);
+            printf("------------------ Error Stack Trace End ------------------\n");
         }
-    #elif defined(__GNUC__) || defined(__GNUG__) || defined(__clang__)
-        void ckg_stack_trace_dump() {
-            CKG_LOG_PRINT("------------------ Error Stack Trace ------------------\n");
-            // backtrace
-            CKG_LOG_PRINT("------------------ Error Stack Trace End ------------------\n");
+    #elif defined(PLATFORM_LINUX)
+        #include <stdio.h>
+        #include <stdlib.h>
+        #include <execinfo.h>
+        #include <string.h>
+
+        void ckg_stack_trace_dump(const char* function, const char* file, int line) {
+            printf("------------------ Error Stack Trace ------------------\n");
+
+            // Log the triggering function first
+            printf("0: %s - %s:%u\n", function, file, line);
+
+            void* array[100];
+            int size = backtrace(array, 100);
+            char** symbols = backtrace_symbols(array, size);
+
+            if (symbols == NULL) {
+                printf("Failed to get backtrace symbols\n");
+                printf("------------------ Error Stack Trace End ------------------\n");
+                return;
+            }
+
+            for (int i = 1; i < size; ++i) {
+                char* symbol_str = symbols[i];
+                char* name_begin = NULL;
+                char* name_end = NULL;
+                char* offset_begin = NULL;
+                
+                name_begin = strchr(symbol_str, '(');
+                if (name_begin) {
+                    name_begin++;
+                    offset_begin = strchr(name_begin, '+');
+                    if (offset_begin) {
+                        name_end = offset_begin;
+                        offset_begin++;
+                    }
+                }
+                
+                if (name_begin && name_end && name_end > name_begin) {
+                    size_t name_len = name_end - name_begin;
+                    char* symbol_name = (char*)malloc(name_len + 1);
+                    if (symbol_name) {
+                        memcpy(symbol_name, name_begin, name_len);
+                        symbol_name[name_len] = '\0';
+                        
+                        printf("%d: %s\n", i, symbol_str);
+                        
+                        free(symbol_name);
+                    } else {
+                        printf("%d: %s\n", i, symbol_str);
+                    }
+                } else {
+                    printf("%d: %s\n", i, symbol_str);
+                }
+            }
+
+            free(symbols);
+            printf("------------------ Error Stack Trace End ------------------\n");
+        }
+    #elif defined(PLATFORM_APPLE)
+        #include <stdio.h>
+        #include <stdlib.h>
+        #include <execinfo.h>
+        #include <dlfcn.h>
+
+        void ckg_stack_trace_dump(const char* function, const char* file, int line) {
+            printf("------------------ Error Stack Trace ------------------\n");
+            printf("0: %s - %s:%u\n", function, file, line);
+
+            void* array[100];
+            int size = backtrace(array, 100);
+            char** symbols = backtrace_symbols(array, size);
+            
+            if (symbols == NULL) {
+                printf("Failed to get backtrace symbols\n");
+                printf("------------------ Error Stack Trace End ------------------\n");
+                return;
+            }
+
+            for (int i = 0; i < size - 1; ++i) {
+                Dl_info info;
+                if (dladdr(array[i], &info) && info.dli_sname) {
+                    printf("%d: %s in %s\n", i, info.dli_sname, info.dli_fname ? info.dli_fname : "unknown");
+                } else {
+                    printf("%d: %s\n", i, symbols[i]);
+                }
+            }
+
+            free(symbols);
+            printf("------------------ Error Stack Trace End ------------------\n");
+        }
+    #else
+        void ckg_stack_trace_dump(const char* function, const char* file, int line) {
+            printf("------------------ Error Stack Trace ------------------\n");
+            printf("0: %s - %s:%u\n", function, file, line);
+            printf("Stack trace functionality not implemented for this platform\n");
+            printf("------------------ Error Stack Trace End ------------------\n");
         }
     #endif
 #endif
 
 #if defined(CKG_IMPL_LOGGER)
-    #define LOGGER_START_DELIM "${"
-    #define LOGGER_END_DELIM "}"
+    char LOGGER_START_DELIM[] = "${";
+    char LOGGER_END_DELIM[] = "}";
+
+    internal const char* ckg_log_level_format[LOG_LEVEL_COUNT] = {
+        CKG_RED_BACKGROUND,
+        CKG_RED,
+        CKG_PURPLE,
+        CKG_BLUE,
+        CKG_GREEN,
+        CKG_COLOR_RESET
+    };
 
     internal bool __ckg_message_has_special_delmitor(char* message, u64 message_length) {
         bool start_delimitor_index = ckg_str_contains(message, message_length, LOGGER_START_DELIM, sizeof(LOGGER_START_DELIM) - 1);
@@ -729,22 +964,21 @@
         if (middle_to_color.length == 0) {
             bool found = message[message_length - 1] == '\n';
             printf("%.*s", (int)(message_length - found), message);
-
             return;
         }
 
         s64 start_delimitor_index = ckg_str_index_of(message, message_length, LOGGER_START_DELIM, sizeof(LOGGER_START_DELIM) - 1);
         s64 end_delimitor_index = ckg_str_index_of(message, message_length, LOGGER_END_DELIM, sizeof(LOGGER_END_DELIM) - 1);
 
-        CKG_StringView left_side_view = ckg_sv_create(message, start_delimitor_index);
-        CKG_StringView right_side_view = ckg_sv_create(message + (end_delimitor_index + (sizeof(LOGGER_END_DELIM) - 1)), message_length);
+        CKG_StringView left_side_view = ckg_sv_create(message, (u64)start_delimitor_index);
+        CKG_StringView right_side_view = ckg_sv_create(message + ((u64)end_delimitor_index + (sizeof(LOGGER_END_DELIM) - 1)), (u64)message_length);
 
         printf("%.*s%s%.*s%s", (int)left_side_view.length, left_side_view.data, ckg_log_level_format[log_level], (int)middle_to_color.length, middle_to_color.data, CKG_COLOR_RESET);
 
         __ckg_special_print_helper(right_side_view.data, right_side_view.length, log_level);
     }
 
-    void MACRO_ckg_log_output(CKG_LogLevel log_level, char* message, ...) {
+    void MACRO_ckg_log_output(CKG_LogLevel log_level, const char* message, ...) {
         va_list args_list;
         va_start(args_list, message);
         
@@ -753,7 +987,7 @@
         
         va_end(args_list);
         
-        printf("%s%s%s", ckg_log_level_format[log_level], ckg_log_level_strings[log_level], CKG_COLOR_RESET);
+        printf("%s%s", ckg_log_level_format[log_level], CKG_COLOR_RESET);
         
         if (__ckg_message_has_special_delmitor(out_message, out_message_length)) {
             __ckg_special_print_helper(out_message, out_message_length, log_level);
@@ -770,13 +1004,39 @@
     }
 #endif
 
+#if defined(CKG_IMPL_ASSERT)
+    void MACRO_ckg_assert(bool expression, const char* function, const char* file, int line) {
+        if (!expression) {                                      
+            ckg_stack_trace_dump(function, file, line);                               
+            char msg[] = "Func: %s, File: %s:%d\n";          
+            CKG_LOG_FATAL(msg, function, file, line);
+            CRASH;                   
+        }                                                         
+    }
+
+    void MACRO_ckg_assert_msg(bool expression, const char* function, const char* file, int line, const char* msg, ...) {  
+        va_list args;
+        va_start(args, msg);
+
+        if (!(expression)) {                                      
+            ckg_stack_trace_dump(function, file, line);                               
+            char ckg_msg[] = "Func: %s, File: %s:%d\n";          
+            CKG_LOG_FATAL(ckg_msg, function, file, line);
+            CKG_LOG_FATAL("%s", ckg_str_va_sprint(NULLPTR, msg, args));                
+            CRASH;                                                
+        }   
+
+        va_end(args);                                                                                             
+    }
+#endif
+
 #if defined(CKG_IMPL_ERRORS)
-    internal char* CKG_ERROR_IO_STRINGS[CKG_ERROR_IO_COUNT] = {
+    internal const char* CKG_ERROR_IO_STRINGS[CKG_ERROR_IO_COUNT] = {
         stringify(CKG_ERROR_IO_RESOURCE_NOT_FOUND),
         stringify(CKG_ERROR_IO_RESOURCE_TOO_BIG)
     };
 
-    internal char* CKG_ERROR_ARGS_STRINGS[CKG_ERROR_ARGS_COUNT] = {
+    internal const char* CKG_ERROR_ARGS_STRINGS[CKG_ERROR_ARGS_COUNT] = {
         stringify(CKG_ERROR_ARG_ONE_INVALID),
         stringify(CKG_ERROR_ARG_ONE_NULLPTR),
         stringify(CKG_ERROR_ARG_ONE_ZERO),
@@ -791,7 +1051,7 @@
         stringify(CKG_ERROR_ARG_FOUR_ZERO)
     };
 
-    char* ckg_error_str(CKG_Error error_code) {
+    const char* ckg_error_str(CKG_Error error_code) {
         if (error_code == CKG_ERROR_SUCCESS) {
             return stringify(CKG_ERROR_SUCCESS);
         }
@@ -826,24 +1086,24 @@
         free(data);
     }
 
-    internal CKG_Allocator allocator = {ckg_default_libc_malloc, ckg_default_libc_free, 0};
+    internal CKG_Allocator global_allocator = {ckg_default_libc_malloc, ckg_default_libc_free, NULLPTR};
 
     void ckg_bind_custom_allocator(CKG_Alloc_T* a, CKG_Free_T* f, void* ctx) {
-        ckg_assert_msg(a, "Alloc function is nullptr\n");
-        ckg_assert_msg(f, "Free function is nullptr\n");
+        ckg_assert_msg(a, "Alloc function is NULLPTR\n");
+        ckg_assert_msg(f, "Free function is NULLPTR\n");
         
-        allocator.allocate = a;
-        allocator.free = f;
+        global_allocator.allocate = a;
+        global_allocator.free = f;
 
         if (ctx) {
-            allocator.ctx = ctx;
+            global_allocator.ctx = ctx;
         }
     }
 
     void* ckg_alloc(size_t allocation_size) {
         ckg_assert(allocation_size != 0);
 
-        void* ret = allocator.allocate(&allocator, allocation_size);
+        void* ret = global_allocator.allocate(&global_allocator, allocation_size);
         ckg_memory_zero(ret, allocation_size);
         return ret;
     }
@@ -851,7 +1111,7 @@
     void* MACRO_ckg_free(void* data) {
         ckg_assert(data);
         
-        allocator.free(&allocator, data);
+        global_allocator.free(&global_allocator, data);
         return NULLPTR;
     }
 
@@ -892,16 +1152,19 @@
             return;
         }
 
-        u8* temp_data_copy = (u8*)ckg_alloc(source_size_in_bytes);
-        for (size_t i = 0; i < source_size_in_bytes; i++) {
-            temp_data_copy[i] = ((u8*)source)[i];
-        }
+        u8* src = (u8*)source;
+        u8* dst = (u8*)destination;
 
-        for (size_t i = 0; i < source_size_in_bytes; i++) {
-            ((u8*)destination)[i] = temp_data_copy[i];
+        bool overlap = dst < src || dst >= src + source_size_in_bytes;
+        if (overlap) {
+            for (size_t i = 0; i < source_size_in_bytes; i++) {
+                dst[i] = src[i];
+            }
+        } else {
+            for (size_t i = source_size_in_bytes; i-- > 0;) {
+                dst[i] = src[i];
+            }
         }
-
-        ckg_free(temp_data_copy);
     }
 
     void ckg_memory_zero(void* data, size_t data_size_in_bytes) {
@@ -912,10 +1175,9 @@
 
     // Date: September 12, 2024
     // TODO(Jovanni): MAKE SURE YOU TEST THIS. Its seems to maybe work?
-    void MACRO_ckg_memory_delete_index(void* data, size_t number_of_elements, size_t data_capacity, size_t element_size_in_bytes, size_t index) {
-        ckg_assert((s32)number_of_elements - 1 >= 0);
-        ckg_assert(index < data_capacity);
+    void MACRO_ckg_memory_delete_index(void* data, int number_of_elements, int data_capacity, size_t element_size_in_bytes, int index) {
         ckg_assert(index >= 0);
+        ckg_assert(index < data_capacity);
 
         u8* byte_data = (u8*)data;
 
@@ -929,10 +1191,9 @@
 
     // Date: September 12, 2024
     // TODO(Jovanni): MAKE SURE YOU TEST THIS. Its seems to maybe work?
-    void MACRO_ckg_memory_insert_index(void* data, size_t number_of_elements, size_t data_capacity, size_t element_size_in_bytes, size_t index) {
+    void MACRO_ckg_memory_insert_index(void* data, int number_of_elements, int data_capacity, size_t element_size_in_bytes, int index) {
         ckg_assert((number_of_elements + 1) < data_capacity);
         ckg_assert(index < data_capacity - 1);
-        ckg_assert(index >= 0);
 
         u8* byte_data = (u8*)data;
 
@@ -946,7 +1207,7 @@
 #endif
 
 #if defined(CKG_IMPL_ARENA)
-    CKG_Arena ckg_arena_create_custom(void* memory, size_t allocation_size, u32 flags, u8 alignment) {
+    CKG_Arena ckg_arena_create_custom(void* memory, size_t allocation_size, int flags, u8 alignment) {
         ckg_assert_msg(memory, "Memory can't be a null pointer!\n");
         ckg_assert_msg(allocation_size != 0, "Can't have a zero allocation size!\n");
         ckg_assert_msg(!((flags & CKG_ARENA_FLAG_CIRCULAR) && (flags & CKG_ARENA_FLAG_FIXED)), "Can't have both a fixed an circular arena!\n");
@@ -968,7 +1229,7 @@
             ckg_free(arena->base_address);
         }
 
-        arena->flags = (u32)CKG_ARENA_FLAG_INVALID;
+        arena->flags = CKG_ARENA_FLAG_INVALID;
     }
 
     void ckg_arena_zero(CKG_Arena* arena) {
@@ -989,11 +1250,11 @@
         ckg_assert_msg(element_size != 0, "Element size can't be zero!\n");
 
         if (arena->flags & CKG_ARENA_FLAG_FIXED) {
-            ckg_assert_msg((arena->used + element_size <= arena->capacity), "Ran out of arena memory!\n");
+            ckg_assert_msg(arena->used + element_size <= arena->capacity, "Ran out of arena memory!\n");
         } else if (arena->flags & CKG_ARENA_FLAG_CIRCULAR) {
             if ((arena->used + element_size > arena->capacity)) {
                 arena->used = sizeof(CKG_Arena);
-                ckg_assert_msg((arena->used + element_size <= arena->capacity), "Element size exceeds circular arena allocation capacity!\n");
+                ckg_assert_msg(arena->used + element_size <= arena->capacity, "Element size exceeds circular arena allocation capacity!\n");
             }
         }
 
@@ -1028,20 +1289,20 @@
 #endif
 
 #if defined(CKG_IMPL_STRING)
-    char* ckg_cstr_alloc(char* s1, size_t length) {
+    char* ckg_str_alloc(char* s1, u64 length) {
         char* ret = ckg_alloc(length + 1) ;
         ckg_memory_copy(s1, ret, length, length);
         return ret;
     }
 
-    size_t ckg_cstr_length(char* cstring) {
+    u64 ckg_cstr_length(char* cstring) {
         ckg_assert(cstring);
 
         if (!cstring) {
             return 0; // This should never get here but the compiler wants this
         }
 
-        size_t length = 0;
+        u64 length = 0;
         char* cursor = (char*)cstring;
         while(*cursor++ != '\0') {
             length++;
@@ -1050,13 +1311,12 @@
         return length;
     }
 
-    void ckg_cstr_clear(char* s1, size_t length) {
+    void ckg_cstr_clear(char* s1, u64 length) {
         ckg_memory_zero(s1, length);
     }
 
-    CKG_StringView ckg_sv_create(char* data, size_t length) {
+    CKG_StringView ckg_sv_create(char* data, u64 length) {
         ckg_assert(data);
-        ckg_assert(length >= 0);
 
         CKG_StringView ret;
         ret.data = data;
@@ -1084,14 +1344,14 @@
         }
 
         CKG_StringView ret = CKG_SV_EMPTY();
-        u64 start_str_index = (u64)(start_delimitor_index + start_delimitor_length);
+        u64 start_str_index = (u64)((u64)start_delimitor_index + start_delimitor_length);
         ret.data = str + start_str_index;
-        ret.length = end_delimitor_index - start_str_index;
+        ret.length = (u64)end_delimitor_index - start_str_index;
 
         return ret;
     }
 
-    CKG_StringView* ckg_sv_split(char* data, size_t length, char* delimitor, size_t delimitor_length) {
+    CKG_StringView* ckg_sv_split(char* data, u64 length, char* delimitor, u64 delimitor_length) {
         ckg_assert(data);
         ckg_assert(delimitor);
         ckg_assert_msg(delimitor_length > 0, "delimitor can not be a empty string!\n");
@@ -1116,49 +1376,46 @@
             if (found_index == 0) {
                 ckg_vector_push(ret_vector, CKG_SV_EMPTY());
             } else {
-                CKG_StringView substring = ckg_sv_create(str_view.data, found_index);
+                CKG_StringView substring = ckg_sv_create(str_view.data, (u64)found_index);
                 ckg_vector_push(ret_vector, substring);
             }
 
-            str_view.data += (found_index + 1);
-            str_view.length -= (found_index + 1);
+            str_view.data += ((u64)found_index + 1);
+            str_view.length -= ((u64)found_index + 1);
         }
 
         return ret_vector;
     }
 
-    bool ckg_str_equal(char* s1, size_t s1_length, char* s2, size_t s2_length) {
+    bool ckg_str_equal(char* s1, u64 s1_length, char* s2, u64 s2_length) {
         return ckg_memory_compare(s1, s2, s1_length, s2_length);
     }
 
-    void ckg_str_copy(char* s1, size_t s1_capacity, char* s2, size_t s2_length) {
+    void ckg_str_copy(char* s1, size_t s1_capacity, char* s2, u64 s2_length) {
         ckg_memory_zero((void*)s1, s1_capacity);
         ckg_memory_copy(s2, s1, s2_length, s1_capacity);
     }
 
-    void ckg_str_insert(char* str, size_t str_length, size_t str_capacity, char* to_insert, size_t to_insert_length, size_t index) {
+    void ckg_str_insert(char* str, u64 str_length, size_t str_capacity, char* to_insert, u64 to_insert_length, u64 index) {
         ckg_assert(str);
         ckg_assert(to_insert);
 
-        size_t new_length = str_length + to_insert_length;
-
-        ckg_assert(index >= 0 && index <= str_length);
+        u64 new_length = str_length + to_insert_length;
         ckg_assert_msg(new_length < str_capacity, "ckg_str_insert: str_capacity is %lld but new valid cstring length is %d + %d + 1(null_term)= %d\n", str_capacity, str_length, to_insert_length, new_length + 1);
+        
         u8* move_source_ptr = (u8*)(str + index);
         u8* move_dest_ptr = (u8*)(move_source_ptr + to_insert_length);
 
         ckg_memory_copy(move_source_ptr, move_dest_ptr, str_length - index, str_capacity - (index + to_insert_length));
-        
         u8* copy_dest_ptr = (u8*)(str + index);
         ckg_memory_copy(to_insert, copy_dest_ptr, to_insert_length, str_capacity);
     }
 
-    void ckg_str_insert_char(char* str, size_t str_length, size_t str_capacity, char to_insert, size_t index) {
+    void ckg_str_insert_char(char* str, u64 str_length, size_t str_capacity, char to_insert, u64 index) {
         ckg_assert(str);
         ckg_assert(to_insert);
-        ckg_assert(index >= 0 && index <= str_length);
 
-        size_t to_insert_length = 1;
+        u64 to_insert_length = 1;
         bool expression = (str_length + to_insert_length) < str_capacity;
         ckg_assert_msg(expression, "ckg_str_insert_char: str overflow new_capacity_required: %d >= current_capacity: %lld\n",  str_length + to_insert_length, str_capacity);
 
@@ -1167,24 +1424,24 @@
         str[index] = to_insert;
     }
 
-    void ckg_str_append(char* str, size_t str_length, size_t str_capacity, char* to_append, size_t to_append_length) {
+    void ckg_str_append(char* str, u64 str_length, size_t str_capacity, char* to_append, u64 to_append_length) {
         ckg_str_insert(str, str_length, str_capacity, to_append, to_append_length, str_length);
     }
 
-    void ckg_str_append_char(char* str, size_t str_length, size_t str_capacity, char to_append) {
+    void ckg_str_append_char(char* str, u64 str_length, size_t str_capacity, char to_append) {
         ckg_str_insert_char(str, str_length, str_capacity, to_append, str_length);
     }
 
-    void ckg_str_reverse(char* str, size_t str_length, char* returned_reversed_string_buffer, size_t reversed_buffer_capacity) {
+    void ckg_str_reverse(char* str, u64 str_length, char* returned_reversed_string_buffer, size_t reversed_buffer_capacity) {
         ckg_assert(str);
         ckg_assert(reversed_buffer_capacity > str_length);
 
-        for (s64 i = str_length - 1; i >= 0; i--) {
-            ckg_str_append_char(returned_reversed_string_buffer, (str_length - 1) - i, reversed_buffer_capacity, str[i]);
+        for (s64 i = (s64)str_length - 1; i >= 0; i--) {
+            ckg_str_append_char(returned_reversed_string_buffer, ((str_length - 1) - (u64)i), reversed_buffer_capacity, str[i]);
         }
     }
 
-    s64 ckg_str_index_of(char* str, size_t str_length, char* substring, size_t substring_length) {
+    s64 ckg_str_index_of(char* str, u64 str_length, char* substring, u64 substring_length) {
         ckg_assert(str);
         ckg_assert(substring);
 
@@ -1201,7 +1458,7 @@
         }
         
         s64 ret_index = -1;
-        for (size_t i = 0; i <= str_length - substring_length; i++) {
+        for (u64 i = 0; i <= str_length - substring_length; i++) {
             if (ret_index != -1) {
                 break;
             }
@@ -1212,7 +1469,7 @@
 
             CKG_StringView current_view = ckg_sv_create(str + i, substring_length);
             if (ckg_str_equal(substring, substring_length, current_view.data, current_view.length)) {
-                ret_index = i;
+                ret_index = (s64)i;
                 break;
             }
         }
@@ -1220,14 +1477,14 @@
         return ret_index; // returns -1 if not found
     }
 
-    bool ckg_str_contains(char* str, size_t str_length, char* contains, size_t contains_length) {
+    bool ckg_str_contains(char* str, u64 str_length, char* contains, u64 contains_length) {
         ckg_assert(str);
         ckg_assert(contains);
 
         return ckg_str_index_of(str, str_length, contains, contains_length) != -1;
     }
 
-    s64 ckg_str_last_index_of(char* str, size_t str_length, char* substring, size_t substring_length) {
+    s64 ckg_str_last_index_of(char* str, u64 str_length, char* substring, u64 substring_length) {
         ckg_assert(str);
         ckg_assert(substring);
 
@@ -1244,21 +1501,21 @@
         }
         
         s64 ret_index = -1;
-        for (size_t i = 0; i <= (str_length - substring_length); i++) {
+        for (u64 i = 0; i <= (str_length - substring_length); i++) {
             if (str[i] != substring[0]) {
                 continue;
             }
 
             CKG_StringView current_view = ckg_sv_create(str + i, substring_length);
             if (ckg_str_equal(current_view.data, current_view.length, substring, substring_length)) {
-                ret_index = i;
+                ret_index = (s64)i;
             }
         }
 
         return ret_index;
     }
 
-    bool ckg_str_starts_with(char* str, size_t str_length, char* starts_with, size_t starts_with_length) {
+    bool ckg_str_starts_with(char* str, u64 str_length, char* starts_with, u64 starts_with_length) {
         ckg_assert(str);
         ckg_assert(starts_with);
 
@@ -1275,7 +1532,7 @@
         return false;
     }
 
-    bool ckg_str_ends_with(char* str, size_t str_length, char* ends_with, size_t ends_with_length) {
+    bool ckg_str_ends_with(char* str, u64 str_length, char* ends_with, u64 ends_with_length) {
         ckg_assert(str);
         ckg_assert(ends_with);
 
@@ -1285,7 +1542,7 @@
             return false;
         }
 
-        size_t start_index = MAX(str_length - 1, 0) - MAX(ends_with_length - 1, 0);
+        u64 start_index = MAX(str_length - 1, 0) - MAX(ends_with_length - 1, 0);
         if (str[start_index] != ends_with[0]) {
             return false;
         }
@@ -1297,10 +1554,10 @@
         return false;
     }
 
-    char* ckg_str_va_sprint(u64* str_length_ptr_back, char* fmt, va_list args) {
+    char* ckg_str_va_sprint(u64* str_length_ptr_back, const char* fmt, va_list args) {
         va_list args_copy;
         va_copy(args_copy, args);
-        u64 allocation_ret = vsnprintf(NULLPTR, 0, fmt, args_copy) + 1; // +1 for null terminator
+        u64 allocation_ret = (u64)vsnprintf(NULLPTR, 0, fmt, args_copy) + 1; // +1 for null terminator
         va_end(args_copy);
 
         char* buffer = ckg_alloc(allocation_ret);
@@ -1316,7 +1573,7 @@
         return buffer;
     }
 
-    char* MACRO_ckg_str_sprint(u64* str_length_ptr_back, char* fmt, ...) {
+    char* MACRO_ckg_str_sprint(u64* str_length_ptr_back, const char* fmt, ...) {
         va_list args;
         va_start(args, fmt);
         char* ret = ckg_str_va_sprint(str_length_ptr_back, fmt, args);
@@ -1328,7 +1585,7 @@
 
 #if defined(CKG_IMPL_CHAR)
     bool ckg_char_is_alpha(char c) {
-        c = (c & (0b11011111)); // mask off the 32 bit
+        c = (char)((int)c & (0b11011111)); // mask off the 32 bit
         return ckg_char_is_upper(c);
     }
 
@@ -1342,21 +1599,21 @@
     //
     // ========== START CKG_VECTOR ==========
     //
-    void* ckg_vector_grow(void* vector, size_t element_size, size_t capacity) {
+    void* ckg_vector_grow(void* vector, size_t element_size, int capacity) {
         if (vector == NULLPTR) {
-            size_t real_capacity = (capacity > 0 ? capacity : VECTOR_DEFAULT_CAPACITY);
+            int real_capacity = (capacity > 0 ? capacity : VECTOR_DEFAULT_CAPACITY);
             vector = ckg_alloc(sizeof(CKG_VectorHeader) + (real_capacity * element_size));
             vector = (u8*)vector + sizeof(CKG_VectorHeader);
             ckg_vector_header_base(vector)->capacity = real_capacity;
             ckg_vector_header_base(vector)->element_size = element_size;
         }
 
-        size_t count = ckg_vector_count(vector);
-        size_t capactiy = ckg_vector_capacity(vector);
+        int count = ckg_vector_count(vector);
+        int capactiy = ckg_vector_capacity(vector);
 
         if (capactiy < count + 1) {
             size_t old_allocation_size = sizeof(CKG_VectorHeader) + (capactiy * element_size);
-            size_t new_capactiy = capactiy * 2;
+            int new_capactiy = capactiy * 2;
             size_t new_allocation_size = sizeof(CKG_VectorHeader) + (new_capactiy * element_size);
 
             vector = ckg_realloc(ckg_vector_header_base(vector), old_allocation_size, new_allocation_size);
@@ -1388,6 +1645,8 @@
     // Date: March 22, 2025
     // NOTE(Jovanni): Do we actually need this at all because we have a circular arena?
     void* ckg_ring_buffer_create(size_t element_size, int capacity) {
+        ckg_assert(capacity > 0);
+
         size_t allocation_size = sizeof(CKG_RingBufferHeader) + (capacity * element_size);
         CKG_RingBufferHeader* header = ckg_alloc(allocation_size);
         header->element_size = element_size;
@@ -1481,12 +1740,11 @@
     }
     #define ckg_node_data_free(linked_list, node) node = MACRO_ckg_node_data_free(linked_list, node)
 
-    CKG_Node* ckg_linked_list_insert(CKG_LinkedList* linked_list, size_t index, void* data) {
+    CKG_Node* ckg_linked_list_insert(CKG_LinkedList* linked_list, u64 index, void* data) {
         ckg_assert(linked_list);
         ckg_assert(data);
-        ckg_assert(index >= 0);
 
-        size_t old_count = linked_list->count++;
+        u64 old_count = linked_list->count++;
         if (linked_list->head == NULLPTR) { // there is not a head and by definition no tail
             CKG_Node* new_node_to_insert = ckg_node_create(linked_list, data);
             linked_list->head = new_node_to_insert;
@@ -1531,7 +1789,7 @@
         return new_node_to_insert;
     }
 
-    CKG_Node* ckg_linked_list_get_node(CKG_LinkedList* linked_list, size_t index) {
+    CKG_Node* ckg_linked_list_get_node(CKG_LinkedList* linked_list, u64 index) {
         ckg_assert(linked_list);
         CKG_Node* current_node = linked_list->head; 
         for (size_t i = 0; i < index; i++) {
@@ -1541,7 +1799,7 @@
         return current_node;
     }
 
-    void* ckg_linked_list_get(CKG_LinkedList* linked_list, size_t index) {
+    void* ckg_linked_list_get(CKG_LinkedList* linked_list, u64 index) {
         return ckg_linked_list_get_node(linked_list, index)->data;
     }
 
@@ -1574,10 +1832,9 @@
         return ckg_linked_list_remove(linked_list, linked_list->count - 1);
     }
 
-    CKG_Node ckg_linked_list_remove(CKG_LinkedList* linked_list, size_t index) {
+    CKG_Node ckg_linked_list_remove(CKG_LinkedList* linked_list, u64 index) {
         ckg_assert(linked_list); 
         ckg_assert(linked_list->count > 0); 
-        ckg_assert(index >= 0);
 
         size_t old_count = linked_list->count--;
         if (index == 0 && old_count == 1) { // removing the head fully
@@ -1636,6 +1893,277 @@
     //
     // ========== END CKG_LinkedList ==========
     //
+
+
+    //
+    // ========== Start CKG_HashMap ==========
+    //
+    // Original location:
+    // https://github.com/majek/csiphash/1
+
+    #if defined(_WIN32)
+        #define _le64toh(x) ((uint64_t)(x))
+    #elif defined(__APPLE__)
+        #include <libkern/OSByteOrder.h>
+        #define _le64toh(x) OSSwapLittleToHostInt64(x)
+    #else
+        #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+            #include <sys/endian.h>
+        #else
+            #include <endian.h>
+        #endif
+
+        #if defined(__BYTE_ORDER) && defined(__LITTLE_ENDIAN) && __BYTE_ORDER == __LITTLE_ENDIAN   
+            #define _le64toh(x) ((uint64_t)(x))
+        #else
+            #define _le64toh(x) le64toh(x)
+        #endif
+    #endif
+
+    #define ROTATE(x, b) (uint64_t)( ((x) << (b)) | ( (x) >> (64 - (b))) )
+
+    #define HALF_ROUND(a,b,c,d,s,t)	\
+        a += b; c += d;			    \
+        b = ROTATE(b, s) ^ a;		\
+        d = ROTATE(d, t) ^ c;		\
+        a = ROTATE(a, 32);          \
+
+    #define DOUBLE_ROUND(v0,v1,v2,v3)  \
+        HALF_ROUND(v0,v1,v2,v3,13,16); \
+        HALF_ROUND(v2,v1,v0,v3,17,21); \
+        HALF_ROUND(v0,v1,v2,v3,13,16); \
+        HALF_ROUND(v2,v1,v0,v3,17,21)
+
+    uint64_t siphash24(void* source, u64 source_size) {
+        const char key[16] = {
+            0x00, 0x01, 0x02, 0x03,
+            0x04, 0x05, 0x06, 0x07,
+            0x08, 0x09, 0x0A, 0x0B,
+            0x0C, 0x0D, 0x0E, 0x0F
+        };
+
+        const uint64_t *_key = (const uint64_t*)key;
+        uint64_t k0 = _le64toh(_key[0]);
+        uint64_t k1 = _le64toh(_key[1]);
+        uint64_t b = (uint64_t)source_size << 56;
+        const uint64_t* in = (const uint64_t*)source;
+
+        uint64_t v0 = k0 ^ 0x736f6d6570736575ULL;
+        uint64_t v1 = k1 ^ 0x646f72616e646f6dULL;
+        uint64_t v2 = k0 ^ 0x6c7967656e657261ULL;
+        uint64_t v3 = k1 ^ 0x7465646279746573ULL;
+
+        while (source_size >= 8) {
+            uint64_t mi = _le64toh(*in);
+            in += 1; source_size -= 8;
+            v3 ^= mi;
+            DOUBLE_ROUND(v0,v1,v2,v3);
+            v0 ^= mi;
+        }
+
+        uint64_t t = 0; 
+        uint8_t* pt = (uint8_t*)&t; 
+        const uint8_t* m = (const uint8_t*)in;
+        switch (source_size) {
+            case 7: pt[6] = m[6];
+            case 6: pt[5] = m[5];
+            case 5: pt[4] = m[4];
+            case 4: *((uint32_t*)&pt[0]) = *((uint32_t*)&m[0]); break;
+            case 3: pt[2] = m[2];
+            case 2: pt[1] = m[1];
+            case 1: pt[0] = m[0];
+        }
+        b |= _le64toh(t);
+
+        v3 ^= b;
+        DOUBLE_ROUND(v0,v1,v2,v3);
+        v0 ^= b; v2 ^= 0xff;
+        DOUBLE_ROUND(v0,v1,v2,v3);
+        DOUBLE_ROUND(v0,v1,v2,v3);
+
+        u64 ret = (v0 ^ v1) ^ (v2 ^ v3);
+        return ret;
+    }
+
+    float ckg_hashmap_load_factor(void* map) {
+        CKG_HashMapMeta* meta = (CKG_HashMapMeta*)map;
+        return (float)meta->count / (float)meta->capacity;
+    }
+
+    u64 ckit_hashmap_resolve_collision(void* map, void* key, u64 inital_hash_index) {
+        CKG_HashMapMeta* meta = (CKG_HashMapMeta*)map;
+        u8* entries_base_address = NULLPTR;
+        ckg_memory_copy((u8*)map + meta->entry_offset, &entries_base_address, sizeof(u8*), sizeof(u8*));
+
+        u64 cannonical_hash_index = inital_hash_index;
+
+        // Date: May 16, 2025
+        // TODO(Jovanni): This probably needs to have a comparision function to actually be correct
+        while (true) {
+            u8* entry = entries_base_address + (cannonical_hash_index * meta->entry_size);
+            u8* entry_key = NULLPTR;
+            if (meta->key_is_ptr) {
+                ckg_memory_copy(entry + meta->entry_key_offset, &entry_key, sizeof(u8*), sizeof(u8*));
+            } else {
+                entry_key = entry + meta->entry_key_offset;
+            }
+
+            bool entry_filled = *(entry + meta->entry_filled_offset);
+            if (!entry_filled) {
+                break;
+            }
+
+            bool hashes_match = (meta->hash_fn(entry_key, meta->key_size) == meta->hash_fn(key, meta->key_size));
+            if (hashes_match) {
+                break;
+            }
+
+            cannonical_hash_index++;
+            cannonical_hash_index = cannonical_hash_index % meta->capacity;
+        }
+
+        return cannonical_hash_index;
+    }
+
+    u64 ckg_string_hash(void* str, u64 str_length) {
+        (void)str_length;
+
+        u64 hash = 5381;
+        u8* str_ptr = str;
+        int c;
+
+        while ((c = *str_ptr++)) {
+            hash = ((hash << 5) + hash) + c;
+        }
+
+        return hash;
+    }
+
+    u64 ckg_string_view_hash(void* view, u64 str_length) {
+        (void)str_length;
+        CKG_StringView* str_view = (CKG_StringView*)view;
+        u64 hash = 5381;
+        int c;
+
+        for (u64 i = 0; i < str_view->length; i++) {
+            c = str_view->data[i];
+            hash = ((hash << 5) + hash) + c;
+        }
+
+        return hash;
+    }
+
+    typedef struct HashMapContext {
+        CKG_HashMapMeta* meta;
+        void* temp_key_address;
+        void* entry;
+        void* entry_key_address;
+        void* entry_value_address;
+        bool* entry_filled_address;
+        u64 real_index;
+    } HashMapContext;
+
+    static HashMapContext ckg_hashmap_find_entry(void* map) {
+        HashMapContext context;
+        context.meta = (CKG_HashMapMeta*)map;
+        context.temp_key_address = NULLPTR;
+
+        if (context.meta->key_is_ptr) {
+            ckg_memory_copy((u8*)map + context.meta->key_offset, &context.temp_key_address, sizeof(void*), sizeof(void*));
+        } else {
+            context.temp_key_address = (u8*)map + context.meta->key_offset;
+        }
+
+        u64 hash = context.meta->hash_fn(context.temp_key_address, context.meta->key_size);
+        u64 index = hash % context.meta->capacity;
+        context.real_index = ckit_hashmap_resolve_collision(map, context.temp_key_address, index);
+
+        u8* entries = NULLPTR;
+        ckg_memory_copy((u8*)map + context.meta->entry_offset, &entries, sizeof(void*), sizeof(void*));
+        context.entry = entries + (context.real_index * context.meta->entry_size);
+        context.entry_key_address = (u8*)context.entry + context.meta->entry_key_offset;
+        context.entry_value_address = (u8*)context.entry + context.meta->entry_value_offset;
+        context.entry_filled_address = (bool*)((u8*)context.entry + context.meta->entry_filled_offset);
+
+        return context;
+    }
+
+    bool ckg_hashmap_has_helper(void* map) {
+        HashMapContext context = ckg_hashmap_find_entry(map);
+        return *(bool*)(context.entry_filled_address);
+    }
+
+    void ckg_hashmap_get_helper(void* map) {
+        HashMapContext context = ckg_hashmap_find_entry(map);
+        ckg_assert_msg(*(bool*)(context.entry_filled_address), "The key doesn't exist in the hashmap!\n");
+        ckg_memory_copy(context.entry_value_address, (u8*)map + context.meta->value_offset, context.meta->value_size, context.meta->value_size);
+    }
+
+    void ckg_hashmap_put_helper(void* map) {
+        if (ckg_hashmap_load_factor(map) >= CKG_HASHMAP_DEFAULT_LOAD_FACTOR) {
+            ckg_hashmap_grow(map);
+        }
+
+        HashMapContext context = ckg_hashmap_find_entry(map);
+        bool filled = *context.entry_filled_address;
+        if (!filled) {
+           context.meta->count++;
+        }
+        ckg_memory_copy((u8*)map + context.meta->key_offset, context.entry_key_address, context.meta->key_size, context.meta->key_size);
+        ckg_memory_copy((u8*)map + context.meta->value_offset, context.entry_value_address, context.meta->value_size, context.meta->value_size);
+        *(bool*)(context.entry_filled_address) = 1;
+    }
+
+    void ckg_hashmap_pop_helper(void* map) {
+        HashMapContext context = ckg_hashmap_find_entry(map);
+        ckg_assert_msg(*(bool*)(context.entry_filled_address), "The key doesn't exist in the hashmap!\n");
+        ckg_memory_copy(context.entry_value_address, (u8*)map + context.meta->value_offset, context.meta->value_size, context.meta->value_size);
+        *(bool*)(context.entry_filled_address) = 0;
+    }
+
+
+    void ckg_hashmap_grow(void* map) {
+        if (ckg_hashmap_load_factor(map) < CKG_HASHMAP_DEFAULT_LOAD_FACTOR) {
+            return;
+        }
+
+        CKG_HashMapMeta* meta = (CKG_HashMapMeta*)map;
+        u8* entries_base_address = NULLPTR;
+        ckg_memory_copy((u8*)map + meta->entry_offset, &entries_base_address, sizeof(u8*), sizeof(u8*));
+        u64 old_capacity = meta->capacity;
+        meta->capacity *= 2;
+        void* new_entries = ckg_alloc(meta->capacity * meta->entry_size);
+        ckg_memory_copy(&new_entries, (u8*)map + meta->entry_offset, sizeof(u8*), sizeof(u8*));
+
+        // rehash
+        for (u64 i = 0; i < old_capacity; i++) {
+            u8* entry = entries_base_address + (i * meta->entry_size);
+            u8* entry_key = NULLPTR;
+            if (meta->key_is_ptr) {
+                ckg_memory_copy(entry + meta->entry_key_offset, &entry_key, sizeof(u8*), sizeof(u8*));
+            } else {
+                entry_key = entry + meta->entry_key_offset;
+            }
+
+            bool entry_filled = *(bool*)(entry + meta->entry_filled_offset);
+            if (!entry_filled) {
+                continue;
+            }
+
+            u64 hash = meta->hash_fn(entry_key, meta->key_size);
+            u64 index = hash % meta->capacity;
+            u64 real_index = ckit_hashmap_resolve_collision((u8*)map, entry_key, index);
+
+            u8* new_entry = (u8*)new_entries + (real_index * meta->entry_size);
+            ckg_memory_copy(entry, new_entry, meta->entry_size, meta->entry_size);
+        }
+
+        ckg_free(entries_base_address);
+    }
+
+    //
+    // ========== END CKG_HashMap ==========
+    //
 #endif
 
 #if defined(CKG_IMPL_SERIALIZATION)
@@ -1643,6 +2171,7 @@
         ckg_assert(file_handle);
 
         switch (collection_type) {
+            case CKG_COLLECTION_STACK:
             case CKG_COLLECTION_VECTOR: {
                 CKG_VectorHeader* header = ckg_vector_header_base(collection);
                 fwrite(header, sizeof(CKG_VectorHeader), 1, file_handle);
@@ -1793,18 +2322,25 @@
         u8* ckg_io_read_entire_file(char* file_name, size_t* returned_file_size, CKG_Error* err) {
             HANDLE file_handle = CreateFileA(file_name, GENERIC_READ, 0, NULLPTR, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULLPTR);
             if (file_handle == INVALID_HANDLE_VALUE) {
+                CKG_LOG_ERROR("CreateFileA() returned an INVALID_HANDLE_VALUE, the file_name/path is likely wrong: ckg_io_read_entire_file(%s)\n", file_name);
                 ckg_error_safe_set(err, CKG_ERROR_IO_RESOURCE_NOT_FOUND);
                 return NULLPTR;
             }
 
             LARGE_INTEGER large_int = {0};
             BOOL success = GetFileSizeEx(file_handle, &large_int);
-            ckg_assert(success);
-
-            size_t file_size = large_int.QuadPart;
-            if (file_size > SIZE_MAX) {
+            if (!success) {
+                CKG_LOG_ERROR("GetFileSizeEx() Failed to get size from file_handle: ckg_io_read_entire_file(%s)\n", file_name);
+                ckg_error_safe_set(err, CKG_ERROR_IO_RESOURCE_NOT_FOUND);
                 CloseHandle(file_handle);
+                return NULLPTR;
+            }
+
+            size_t file_size = (size_t)large_int.QuadPart;
+            if (file_size > SIZE_MAX) {
+                CKG_LOG_ERROR("File size is bigger than max size: ckg_io_read_entire_file(%s)\n", file_name);
                 ckg_error_safe_set(err, CKG_ERROR_IO_RESOURCE_TOO_BIG);
+                CloseHandle(file_handle);
 
                 return NULLPTR;
             }
@@ -1814,8 +2350,12 @@
             DWORD bytes_read = 0;
             success = ReadFile(file_handle, file_data, (DWORD)file_size, &bytes_read, NULLPTR);
             CloseHandle(file_handle);
-
-            ckg_assert(success && bytes_read == file_size);
+            if (!success && bytes_read == file_size) {
+                CKG_LOG_ERROR("ReadFile() Failed to get the file data or bytes read doesn't match file_size: ckg_io_read_entire_file(%s)\n", file_name);
+                ckg_error_safe_set(err, CKG_ERROR_IO_RESOURCE_NOT_FOUND);
+                ckg_free(file_data);
+                return NULLPTR;
+            }
 
             if (returned_file_size) {
                 *returned_file_size = (size_t)file_size;
@@ -1839,36 +2379,42 @@
         u8* ckg_io_read_entire_file(char* file_name, size_t* returned_file_size, CKG_Error* err) {
             FILE* file_handle = fopen(file_name, "rb");
             if (file_handle == NULLPTR) {
+                CKG_LOG_ERROR("Invalid file_handle, the file_name/path is likely wrong: ckg_io_read_entire_file(%s)\n", file_name);
                 ckg_error_safe_set(err, CKG_ERROR_IO_RESOURCE_NOT_FOUND);
 
                 return NULLPTR;
             }
 
             if (fseek(file_handle, 0L, SEEK_END) != 0) {
-                CKG_LOG_ERROR("Error: fseek failed\n");
+                CKG_LOG_ERROR("fseek failed: ckg_io_read_entire_file(%s)\n", file_name);
+                ckg_error_safe_set(err, CKG_ERROR_IO_RESOURCE_NOT_FOUND);
                 fclose(file_handle);
                 return NULL;
             }
 
             long file_size = ftell(file_handle);
             if (file_size == -1L) {
-                CKG_LOG_ERROR("Error: ftell failed\n");
+                CKG_LOG_ERROR("ftell failed: ckg_io_read_entire_file(%s)\n", file_name);
+                ckg_error_safe_set(err, CKG_ERROR_IO_RESOURCE_NOT_FOUND);
                 fclose(file_handle);
                 return NULL;
             }
 
-            if (rewind(file_handle), ferror(file_handle)) {
-                CKG_LOG_ERROR("Error: rewind failed\n");
+            rewind(file_handle);
+            if (ferror(file_handle)) {
+                CKG_LOG_ERROR("rewind() failed: ckg_io_read_entire_file(%s)\n", file_name);
+                ckg_error_safe_set(err, CKG_ERROR_IO_RESOURCE_NOT_FOUND);
                 fclose(file_handle);
                 return NULL;
             }
 
             u8* file_data = ckg_alloc((size_t)file_size + 1); // +1 for null terminator
-
             if (fread(file_data, file_size, 1, file_handle) != 1) {
-                fclose(file_handle);
+                CKG_LOG_ERROR(false, "fread() failed: ckg_io_read_entire_file(%s)\n", file_name);
+                ckg_error_safe_set(err, CKG_ERROR_IO_RESOURCE_NOT_FOUND);
                 ckg_free(file_data);
-                ckg_assert_msg(false, "Error reading file");
+                fclose(file_handle);
+
                 return NULLPTR;
             }
 
@@ -1888,7 +2434,9 @@
         CKG_DLL ckg_io_load_dll(char* dll_name, CKG_Error* err) {
             HMODULE library = LoadLibraryA(dll_name);
             if (!library) {
+                CKG_LOG_ERROR(false, "LoadLibraryA() failed: ckg_io_load_dll(%s)\n", dll_name);
                 ckg_error_safe_set(err, CKG_ERROR_IO_RESOURCE_NOT_FOUND);
+
                 return NULLPTR;
             }
 
@@ -1900,6 +2448,7 @@
 
             void* proc = (void*)GetProcAddress(dll, proc_name);
             if (!proc) {
+                CKG_LOG_ERROR(false, "GetProcAddress() failed: ckg_os_get_proc_address(%s)\n", proc_name);
                 ckg_error_safe_set(err, CKG_ERROR_IO_RESOURCE_NOT_FOUND);
                 return NULLPTR;
             }
@@ -1908,13 +2457,16 @@
         }
 
         CKG_DLL MACRO_ckg_os_free_dll(CKG_DLL dll) {
+            ckg_assert(dll);
             FreeLibrary(dll);
+
             return NULLPTR;
         }
     #else
         CKG_DLL ckg_io_load_dll(char* dll_name, CKG_Error* err) {
             void* library = dlopen(dll_name, RTLD_LAZY);
             if (!library) {
+                CKG_LOG_ERROR(false, "dlopen() failed: ckg_io_load_dll(%s)\n", dll_name);
                 ckg_error_safe_set(err, CKG_ERROR_IO_RESOURCE_NOT_FOUND);
                 return NULLPTR;
             }
@@ -1925,6 +2477,7 @@
         void* ckg_os_get_proc_address(CKG_DLL dll, char* proc_name, CKG_Error* err) {
             void* proc = dlsym(dll, proc_name);
             if (!proc) {
+                CKG_LOG_ERROR(false, "dlsym() failed: ckg_os_get_proc_address(%s)\n", proc_name);
                 ckg_error_safe_set(err, CKG_ERROR_IO_RESOURCE_NOT_FOUND);
                 return NULLPTR;
             }
@@ -1933,7 +2486,9 @@
         }
 
         CKG_DLL MACRO_ckg_os_free_dll(CKG_DLL dll) {
+            ckg_assert(dll);
             dlclose(dll);
+
             return NULLPTR;
         }
     #endif

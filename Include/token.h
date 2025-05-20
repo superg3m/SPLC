@@ -135,10 +135,10 @@ typedef struct SPL_Token {
         double f;
         bool b;
     };
-    u32 line;
+    int line;
 } SPL_Token;
 
-SPL_Token spl_token_from_string(CKG_StringView sv, u32 line);
+SPL_Token spl_token_from_string(CKG_StringView sv, int line);
 
 #define SPL_TOKEN_CREATE(value, line) spl_token_from_string(value, line)
 #define SPL_TOKEN_CREATE_CUSTOM(token_type, name, line) (SPL_Token){(token_type), (name), 0, (line)}

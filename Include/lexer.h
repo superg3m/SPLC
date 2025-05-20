@@ -6,7 +6,7 @@ typedef struct Lexer {
     u64 left_pos;
     u64 right_pos;
     SPL_Token* tokens;
-    u32 line;
+    int line;
 
     CKG_StringView source;
     char c;

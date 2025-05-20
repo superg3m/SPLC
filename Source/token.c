@@ -4,7 +4,7 @@ void token_print(SPL_Token token, char* indent) {
     CKG_LOG_PRINT("%s%s(%.*s) | line: %d\n", indent, token_strings[token.type], (int)token.name.length, token.name.data, token.line);
 }
 
-SPL_Token spl_token_from_string(CKG_StringView sv, u32 line) {
+SPL_Token spl_token_from_string(CKG_StringView sv, int line) {
     SPL_Token token = { .line = line, .name = sv };
     
     if (token.name.data[0] == '"') {
