@@ -63,6 +63,7 @@
     #include <stdarg.h>
     #include <stdlib.h>
     #include <stddef.h>
+    #include <ctype.h>
 
     typedef int8_t  s8;
     typedef int16_t s16;
@@ -731,7 +732,6 @@
 #if defined(CJ_IMPL_CSTRING)
     CJ_StringView cj_strview_create(char* str, u64 start, u64 end) {
         cj_assert(str);
-        cj_assert(start >= 0);
 
         CJ_StringView ret;
         ret.ptr = str;
@@ -783,7 +783,7 @@
 
         const u64 new_length = str_length + to_insert_length;
 
-        cj_assert(index >= 0 && index <= str_length);
+        cj_assert(index <= str_length);
         cj_assert_msg(new_length < str_capacity, "string_insert: str_capacity is %d but new valid cstring length is %d + %d + 1(null_term)= %d\n", (int)str_capacity, (int)str_length, (int)to_insert_length, (int)new_length + 1);
         u8* move_source_ptr = (u8*)(str + index);
         u8* move_dest_ptr = (u8*)(move_source_ptr + to_insert_length);
@@ -797,7 +797,7 @@
     void cj_cstr_insert_char(char* str, u64 str_length, u64 str_capacity, const char to_insert, const u64 index) {
         cj_assert(str);
         cj_assert(to_insert);
-        cj_assert(index >= 0 && index <= str_length);
+        cj_assert(index <= str_length);
 
         u64 to_insert_length = 1;
         bool expression = (str_length + to_insert_length) < str_capacity;
@@ -1216,7 +1216,7 @@
             cj_cstr_append_char(ret, ret_length++, total_allocation_size, '\n');
         }
 
-        for (int i = 0; i < count; i++) {
+        for (u64 i = 0; i < count; i++) {
             u64 buffer_length = cj_cstr_length(buffers[i]);
             cj_cstr_append(ret, ret_length, total_allocation_size, buffers[i], buffer_length);
             ret_length += buffer_length;
@@ -1306,9 +1306,6 @@
                     }
                 }
 
-                u64 ret_length = 0;
-                u64 spaces_allocation_size = 0;
-
                 return cj_format_json_with_indent(total_allocation_size, arena, num_json, '{', '}', buffers, count);
             } break;
 
@@ -1388,7 +1385,7 @@
         return lookup_table[type];
     }
 
-    const CJ_Token cj_tokenCreate(CJ_TokenType type, char* lexeme, u64 line) {
+    CJ_Token cj_tokenCreate(CJ_TokenType type, char* lexeme, u64 line) {
         CJ_Token ret = {0};
         ret.lexeme = lexeme;
         ret.type = type;
@@ -1716,7 +1713,7 @@
     // if you have ""
 
     internal bool parseJSON(CJ_Parser* parser, CJ_Arena* arena, JSON** ret_state) {
-        if (parser->current >= cj_vector_count(parser->tokens)) {
+        if (parser->current >= (u64)cj_vector_count(parser->tokens)) {
             *ret_state = NULLPTR;
         }
 
