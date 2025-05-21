@@ -50,35 +50,37 @@ yStep      =   15;
 
 maxIter    =  200;
 
-for (y0 = topEdge; y0 >= bottomEdge; y0 = y0 - yStep) {
+for (y0 = topEdge; y0 > bottomEdge; y0 = y0 - yStep) {
     for (x0 = leftEdge; x0 < rightEdge; x0 = x0 + xStep) {
         x = 0;
         y = 0;
         i = 0;
-        theChar = "";
+        theChar = " ";
 
         while (i < maxIter) {
-            x_x = (x * x) / 200;
-            y_y = (y * y) / 200;
+            x_x = (x * x) / 200.0;
+            y_y = (y * y) / 200.0;
 
-            if (x_x + y_y > 800) {
+
+            if ((x_x + y_y) > 800) {
                 if (i > 9) {
                     theChar = "@";
                 } else {
                     theChar = "" + i;
                 }
+                
                 i = maxIter;
+            } else {
+                println(x_x + y_y);
             }
 
-            newY = (x * y) / 100 + y0;
-            newX = x_x - y_y + x0;
-
-            y = newY;
-            x = newX;
+            y = ((x * y) / 100.0) + y0;
+            x = x_x - y_y + x0;
             i = i + 1;
         }
 
-        print(theChar);
+        //print(theChar);
     }
-    print("");
+
+    //print("\n");
 }

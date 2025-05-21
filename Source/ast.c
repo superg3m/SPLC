@@ -104,6 +104,12 @@ internal JSON* ast_to_json_helper(JSON* root, ASTNode* node, CJ_Arena* arena) {
             cj_push(root, "PrintStatement", ast_to_json_helper(print_json, ast_node_create(AST_NODE_EXPRESSION, inner_expression), arena));
 
             return root;
+        } if (stmt->type == STATEMENT_TYPE_PRINTLN) {
+            Expression* inner_expression = stmt->println_statement->value;
+            JSON* print_json = cj_create(arena);
+            cj_push(root, "PrintLnStatement", ast_to_json_helper(print_json, ast_node_create(AST_NODE_EXPRESSION, inner_expression), arena));
+
+            return root;
         } else if (stmt->type == STATEMENT_TYPE_ASSIGNMENT) {
             Expression* left = stmt->assignment_statement->left;
             Expression* right = stmt->assignment_statement->right;

@@ -18,33 +18,33 @@ If you do true && 3 then it has to interpret 3 and it will give you an unsupport
 
 x = (22 + 1) % 3;
 x = x - 1;
-print("23\n" + "HERE");
-print("X's value is: " + x);
-print("Hello World! | " + (4.32 + 54));
+println("23\n" + "HERE");
+println("X's value is: " + x);
+println("Hello World! | " + (4.32 + 54));
 
 if (true) {
     y = 7 + x;
     x = y;
-    print(x);
+    println(x);
 }
 
 if (x == 8) {
     x = 5;
-    print("X's value is: " + x);
-    print("Hello: " + (3 * 4));
-    print("World: " + (32 / 2));
+    println("X's value is: " + x);
+    println("Hello: " + (3 * 4));
+    println("World: " + (32 / 2));
 } else {
-    print(3 / 2);
-    print(4);
-    print("WOWS: " + y);
+    println(3 / 2);
+    println(4);
+    println("WOWS: " + y);
 }
 
 i = 0;
 while (i < 5) {
-    print("WOW THIS ACTUALLY WORKS: " +  i);
+    println("WOW THIS ACTUALLY WORKS: " +  i);
     i = i + 1;
 }
 
 for (j = 9; j >= x; j = j - 1) {
-    print("Ogga: " + j);
+    println("Ogga: " + j);
 }

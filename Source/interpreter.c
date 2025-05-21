@@ -95,7 +95,7 @@ internal InterpreterReturn interpreter_to_string(InterpreterReturn v) {
         result.str = ckg_sv_create(str, str_length);
     } else {
         interpreter_runtime_error(v.line, "Cannot convert type '%s' to string",
-            interpreter_type_strings[v.type]);
+        interpreter_type_strings[v.type]);
     }
 
     return result;
@@ -160,7 +160,7 @@ internal InterpreterReturn interpret_expression(Expression* expression, Scope* s
 
         ret.line = expression->binary->line;
         if (op == SPL_TOKEN_PLUS) {
-           InterpreterType promoted = interpreter_promote_type(left.type, right.type);
+            InterpreterType promoted = interpreter_promote_type(left.type, right.type);
 
             if (promoted == INTERPRETER_FLOAT) {
                 ret.type = INTERPRETER_FLOAT;
@@ -231,7 +231,7 @@ internal InterpreterReturn interpret_expression(Expression* expression, Scope* s
                 ret.type = INTERPRETER_BOOL;
                 ret.b = left.i == right.i;
             }
-        } else if (op == SPL_TOKEN_EQUALS) {
+        } else if (op == SPL_TOKEN_NOT_EQUALS) {
             if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
                 ret.type = INTERPRETER_BOOL;
                 ret.b = left.i != right.i;
@@ -243,7 +243,6 @@ internal InterpreterReturn interpret_expression(Expression* expression, Scope* s
         }
     } else if (expression->type == EXPRESSION_TYPE_LOGICAL_OPERATION) {
         InterpreterReturn left = interpret_expression(expression->logical->left, scope);
-
 
         SPL_TokenType op = expression->logical->operation.type;
 
@@ -313,6 +312,21 @@ internal void interpret_statement(Statement* statement, Scope* scope) {
     if (statement->type == STATEMENT_TYPE_PRINT) {
         InterpreterReturn value = interpret_expression(statement->print_statement->value, scope);
         if (value.type == INTERPRETER_INTEGER) {
+            printf("%d", value.i);
+        } if (value.type == INTERPRETER_FLOAT) {
+            printf("%f", (float)value.f);
+        } else if (value.type == INTERPRETER_STRING) {
+            value = interpreter_to_string(value);
+            char* s = ckg_str_sprint(NULLPTR, "%.*s", value.str.length, value.str.data);
+            unescape_newlines(s);
+            printf("%s", s);
+            ckg_free(s);
+        } else if (value.type == INTERPRETER_BOOL) {
+            printf(value.b ? "true" : "false");
+        }
+    } if (statement->type == STATEMENT_TYPE_PRINTLN) {
+        InterpreterReturn value = interpret_expression(statement->print_statement->value, scope);
+        if (value.type == INTERPRETER_INTEGER) {
             printf("%d\n", value.i);
         } if (value.type == INTERPRETER_FLOAT) {
             printf("%f\n", (float)value.f);
@@ -337,9 +351,11 @@ internal void interpret_statement(Statement* statement, Scope* scope) {
         if (condition.b) {
             Scope if_scope = scope_create(scope);
             interpret_statements(statement->if_statement->if_code_block, &if_scope);
+            ckg_hashmap_free(if_scope.variables);
         } else if (statement->if_statement->else_code_block) {
             Scope else_scope = scope_create(scope);
             interpret_statements(statement->if_statement->else_code_block, &else_scope);
+            ckg_hashmap_free(else_scope.variables);
         }
     } else if (statement->type == STATEMENT_TYPE_WHILE) {
         while (true) {
@@ -354,6 +370,7 @@ internal void interpret_statement(Statement* statement, Scope* scope) {
 
             Scope while_scope = scope_create(scope);
             interpret_statements(statement->while_statement->while_code_block, &while_scope);
+            ckg_hashmap_free(while_scope.variables);
         }
     } else if (statement->type == STATEMENT_TYPE_FOR) {
         Scope for_init_scope = scope_create(scope);
@@ -373,6 +390,8 @@ internal void interpret_statement(Statement* statement, Scope* scope) {
             interpret_statements(statement->for_statement->for_code_block, &for_inside_scope);
             interpret_statement(statement->for_statement->increment, &for_init_scope);
         }
+
+        ckg_hashmap_free(for_init_scope.variables);
     }
 }
 
@@ -390,4 +409,5 @@ void interpret_program(Program* program, Scope* scope) {
 void interpret_ast(ASTNode* ast) {
     Scope global_scope = scope_create(NULLPTR);
     interpret_program(ast->program, &global_scope);
+    ckg_hashmap_free(global_scope.variables);
 }

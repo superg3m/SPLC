@@ -225,6 +225,16 @@ static Statement* parse_print_statement(Parser* parser) {
     return print_statement_create(expr, parser_previous_token(parser).line);
 }
 
+static Statement* parse_println_statement(Parser* parser) {
+    parser_consume_on_match(parser, SPL_TOKEN_PRINTLN);
+    parser_consume_on_match(parser, SPL_TOKEN_LEFT_PAREN);
+    Expression* expr = parse_expression(parser);
+    parser_consume_on_match(parser, SPL_TOKEN_RIGHT_PAREN);
+    parser_consume_on_match(parser, SPL_TOKEN_SEMI_COLON);
+
+    return println_statement_create(expr, parser_previous_token(parser).line);
+}
+
 static Statement* parse_for_statement(Parser* parser) {
     parser_consume_on_match(parser, SPL_TOKEN_FOR);
     parser_consume_on_match(parser, SPL_TOKEN_LEFT_PAREN);
@@ -257,6 +267,8 @@ Statement* parse_statement(Parser* parser, bool requires_semi_colon) {
 
     if (next_token_type == SPL_TOKEN_PRINT) {
         return parse_print_statement(parser);
+    } if (next_token_type == SPL_TOKEN_PRINTLN) {
+        return parse_println_statement(parser);
     } else if (next_token_type == SPL_TOKEN_IF) {
         return parse_if_statement(parser);
     } else if (next_token_type == SPL_TOKEN_FOR) {

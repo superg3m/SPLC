@@ -61,6 +61,7 @@ typedef enum SPL_TokenType {
     SPL_TOKEN_NULL,                       // null
     SPL_TOKEN_RETURN,                     // return
     SPL_TOKEN_PRINT,                      // print(<Expression>)
+    SPL_TOKEN_PRINTLN,                    // println(<Expression>)
     SPL_TOKEN_COUNT
 } SPL_TokenType;
 
@@ -123,7 +124,8 @@ internal char* token_strings[SPL_TOKEN_COUNT] = {
     stringify(SPL_TOKEN_FALSE),
     stringify(SPL_TOKEN_NULL),
     stringify(SPL_TOKEN_RETURN),
-    stringify(SPL_TOKEN_PRINT)
+    stringify(SPL_TOKEN_PRINT),
+    stringify(SPL_TOKEN_PRINTLN)
 };
 
 typedef struct SPL_Token {

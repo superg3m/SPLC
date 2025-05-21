@@ -10,6 +10,16 @@ Statement* print_statement_create(Expression* value, int line) {
     return ret;
 }
 
+Statement* println_statement_create(Expression* value, int line) {
+    Statement* ret = ckg_alloc(sizeof(Statement));
+    ret->type = STATEMENT_TYPE_PRINTLN;
+    ret->println_statement = ckg_alloc(sizeof(PrintStatement));
+    ret->println_statement->value = value;
+    ret->println_statement->line = line;
+    
+    return ret;
+}
+
 Statement* assignment_statement_create(Expression* left, Expression* right, int line) {
     Statement* ret = ckg_alloc(sizeof(Statement));
     ret->type = STATEMENT_TYPE_ASSIGNMENT;

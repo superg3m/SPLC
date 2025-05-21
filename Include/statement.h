@@ -38,6 +38,7 @@ typedef struct ForStatement {
 
 typedef enum StatementType {
     STATEMENT_TYPE_PRINT,
+    STATEMENT_TYPE_PRINTLN,
     STATEMENT_TYPE_ASSIGNMENT,
     STATEMENT_TYPE_IF,
     STATEMENT_TYPE_WHILE,
@@ -48,6 +49,7 @@ typedef struct Statement {
     StatementType type;
     union {
         PrintStatement* print_statement;
+        PrintStatement* println_statement;
         AssignmentStatement* assignment_statement;
         IfStatement* if_statement;
         WhileStatement* while_statement;
@@ -56,6 +58,7 @@ typedef struct Statement {
 } Statement;
 
 Statement* print_statement_create(Expression* value, int line);
+Statement* println_statement_create(Expression* value, int line);
 Statement* assignment_statement_create(Expression* left, Expression* right, int line);
 Statement* if_statement_create(Expression* value, Statement** if_code_block, Statement** else_code_block, int line);
 Statement* while_statement_create(Expression* value, Statement** while_code_block, int line);

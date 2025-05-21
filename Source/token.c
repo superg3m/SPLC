@@ -71,6 +71,8 @@ SPL_TokenType token_get_keyword(char* str, u64 str_length) {
         return SPL_TOKEN_WHILE;
     } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG("print"))) {
         return SPL_TOKEN_PRINT;
+    } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG("println"))) {
+        return SPL_TOKEN_PRINTLN;
     } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG("true"))) {
         return SPL_TOKEN_TRUE;
     } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG("false"))) {
