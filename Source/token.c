@@ -31,7 +31,7 @@ SPL_Token spl_token_from_string(CKG_StringView sv, int line) {
 
 
     char* buffer = ckg_alloc(sv.length + 1);
-    ckg_memory_copy(sv.data, buffer, sv.length, sv.length);
+    ckg_memory_copy(buffer, sv.length, sv.data, sv.length);
     buffer[sv.length] = '\0';
     
     char* endptr_int = NULL;

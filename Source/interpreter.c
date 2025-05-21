@@ -303,7 +303,7 @@ void interpret_statement(Statement* statement, Scope* scope) {
             printf("%f\n", (float)value.f);
         } else if (value.type == INTERPRETER_STRING) {
             value = interpreter_to_string(value);
-            printf("\"%.*s\"\n", (int)value.str.length, value.str.data);
+            printf("%.*s\n", (int)value.str.length, value.str.data);
         } else if (value.type == INTERPRETER_BOOL) {
             printf(value.b ? "true\n" : "false\n");
         }
