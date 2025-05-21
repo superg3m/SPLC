@@ -51,7 +51,7 @@ internal void scope_store(Scope* scope, CKG_StringView identifier, InterpreterRe
     ckg_hashmap_put(scope->variables, identifier, value);
 }
 
-InterpreterType interpreter_promote_type(InterpreterType a, InterpreterType b) {
+internal InterpreterType interpreter_promote_type(InterpreterType a, InterpreterType b) {
     if (a == INTERPRETER_STRING || b == INTERPRETER_STRING) {
         return INTERPRETER_STRING;
     }
@@ -76,7 +76,7 @@ InterpreterType interpreter_promote_type(InterpreterType a, InterpreterType b) {
     return -1; // invalid promotion
 }
 
-InterpreterReturn interpreter_to_string(InterpreterReturn v) {
+internal InterpreterReturn interpreter_to_string(InterpreterReturn v) {
     InterpreterReturn result = {0};
     result.type = INTERPRETER_STRING;
 
@@ -101,7 +101,7 @@ InterpreterReturn interpreter_to_string(InterpreterReturn v) {
     return result;
 }
 
-InterpreterReturn interpreter_concat(InterpreterReturn left, InterpreterReturn right) {
+internal InterpreterReturn interpreter_concat(InterpreterReturn left, InterpreterReturn right) {
     InterpreterReturn result = {0};
     result.type = INTERPRETER_STRING;
 
@@ -115,15 +115,15 @@ InterpreterReturn interpreter_concat(InterpreterReturn left, InterpreterReturn r
     return result;
 }
 
-double interpreter_as_float(InterpreterReturn v) {
+internal double interpreter_as_float(InterpreterReturn v) {
     return v.type == INTERPRETER_FLOAT ? v.f : (double)v.i;
 }
 
-int interpreter_as_int(InterpreterReturn v) {
+internal int interpreter_as_int(InterpreterReturn v) {
     return v.i;
 }
 
-InterpreterReturn interpret_expression(Expression* expression, Scope* scope) {
+internal InterpreterReturn interpret_expression(Expression* expression, Scope* scope) {
     InterpreterReturn ret = INVALID_INTERPRETER_RETURN();
 
     if (expression->type == EXPRESSION_TYPE_INTEGER) {
@@ -294,7 +294,22 @@ InterpreterReturn interpret_expression(Expression* expression, Scope* scope) {
 
 void interpret_statements(Statement** statements, Scope* scope);
 
-void interpret_statement(Statement* statement, Scope* scope) {
+internal void unescape_newlines(char *str) {
+    char *src = str;
+    char *dst = str;
+
+    while (*src) {
+        if (src[0] == '\\' && src[1] == 'n') {
+            *dst++ = '\n';  // Insert real newline character
+            src += 2;       // Skip over the backslash and 'n'
+        } else {
+            *dst++ = *src++;
+        }
+    }
+    *dst = '\0';
+}
+
+internal void interpret_statement(Statement* statement, Scope* scope) {
     if (statement->type == STATEMENT_TYPE_PRINT) {
         InterpreterReturn value = interpret_expression(statement->print_statement->value, scope);
         if (value.type == INTERPRETER_INTEGER) {
@@ -303,7 +318,9 @@ void interpret_statement(Statement* statement, Scope* scope) {
             printf("%f\n", (float)value.f);
         } else if (value.type == INTERPRETER_STRING) {
             value = interpreter_to_string(value);
-            printf("%.*s\n", (int)value.str.length, value.str.data);
+            char* s = ckg_str_sprint(NULLPTR, "%.*s", value.str.length, value.str.data);
+            unescape_newlines(s);
+            printf("%s\n", s);
         } else if (value.type == INTERPRETER_BOOL) {
             printf(value.b ? "true\n" : "false\n");
         }
