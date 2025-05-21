@@ -221,7 +221,7 @@ internal InterpreterReturn interpret_expression(Expression* expression, Scope* s
                 ret.type = INTERPRETER_BOOL;
                 ret.b = left.i < right.i;
             }
-        } else if (op == SPL_TOKEN_LESS_THAN) {
+        } else if (op == SPL_TOKEN_LESS_THAN_EQUALS) {
             if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
                 ret.type = INTERPRETER_BOOL;
                 ret.b = left.i <= right.i;
@@ -321,6 +321,7 @@ internal void interpret_statement(Statement* statement, Scope* scope) {
             char* s = ckg_str_sprint(NULLPTR, "%.*s", value.str.length, value.str.data);
             unescape_newlines(s);
             printf("%s\n", s);
+            ckg_free(s);
         } else if (value.type == INTERPRETER_BOOL) {
             printf(value.b ? "true\n" : "false\n");
         }

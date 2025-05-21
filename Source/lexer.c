@@ -92,6 +92,8 @@ internal void lexer_add_token(Lexer* lexer, SPL_TokenType token_type) {
 internal void lexer_consume_digit_literal(Lexer* lexer) {
     SPL_TokenType token_type = SPL_TOKEN_INTEGER_LITERAL;
 
+    lexer_consume_on_match(lexer, '-');
+
     while (ckg_char_is_digit(lexer_peek_nth_char(lexer, 0)) || lexer_peek_nth_char(lexer, 0) == '.') {
         if (lexer->c == '.') {
             token_type = SPL_TOKEN_FLOAT_LITERAL;
@@ -134,7 +136,7 @@ internal void lexer_consume_character_literal(Lexer* lexer) {
 }
 
 internal bool lexer_consume_literal(Lexer* lexer) {
-    if (ckg_char_is_digit(lexer->c)) {
+    if (ckg_char_is_digit(lexer->c) || (lexer->c == '-' && ckg_char_is_digit(lexer_peek_nth_char(lexer, 0)))) {
         lexer_consume_digit_literal(lexer);
         return true;
     } else if (lexer->c == '\"') {

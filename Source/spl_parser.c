@@ -18,13 +18,17 @@ internal SPL_Token parser_peek_nth_token(Parser* parser, int n) {
     return parser->tokens[parser->current + n];
 }
 
+internal SPL_Token parser_previous_token(Parser* parser) {
+    return parser->tokens[parser->current - 1];
+}
+
 internal void parser_report_error(Parser* parser, char* fmt, ...) {
     SPL_Token token = parser_peek_nth_token(parser, 0);
 
     va_list args;
     va_start(args, fmt);
     CKG_LOG_ERROR("String: %s\n", token_strings[token.type]);
-    CKG_LOG_ERROR("Error Line: %d | %s", parser->tok.line, ckg_str_va_sprint(NULLPTR, fmt, args));
+    CKG_LOG_ERROR("Error Line: %d | %s", token.line, ckg_str_va_sprint(NULLPTR, fmt, args));
     va_end(args);
 
     exit(-1);
@@ -52,10 +56,6 @@ internal bool parser_consume_on_match(Parser* parser, SPL_TokenType expected_typ
     }
 
     return false;
-}
-
-internal SPL_Token parser_previous_token(Parser* parser) {
-    return parser->tokens[parser->current - 1];
 }
 
 internal Expression* parse_expression(Parser* parser);

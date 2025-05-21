@@ -2,7 +2,7 @@
 #include <spl_parser.h>
 #include <interpreter.h>
 
-#define TOTAL_MEMORY_SIZE KiloBytes(60)
+#define TOTAL_MEMORY_SIZE KiloBytes(120)
 void* custom_alloc_callback(CKG_Allocator* allocator, size_t allocation_size) {
 	CKG_Arena* arena = (CKG_Arena*)allocator->ctx;
 	return ckg_arena_push_custom(arena, allocation_size);
