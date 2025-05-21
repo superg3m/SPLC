@@ -20,7 +20,7 @@ void custom_free_callback(CKG_Allocator* allocator, void* data) {
 int main(int argc, char** argv) {
 	u8 program_stack_memory[TOTAL_MEMORY_SIZE] = {0};
 	CKG_Arena arena = ckg_arena_create_fixed(program_stack_memory, TOTAL_MEMORY_SIZE, true);
-	ckg_bind_custom_allocator(custom_alloc_callback, custom_free_callback, &arena);
+	// ckg_bind_custom_allocator(custom_alloc_callback, custom_free_callback, &arena);
 
 	if (argc != 2) {
 		CKG_LOG_ERROR("Usage: splc <filename>\n");
