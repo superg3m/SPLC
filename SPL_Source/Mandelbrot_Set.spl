@@ -41,14 +41,14 @@ begin
 end.
 */
 
-leftEdge   = -420;
-rightEdge  =  300;
-topEdge    =  300;
+leftEdge   = -520;
+rightEdge  = 300;
+topEdge    = 300;
 bottomEdge = -300;
-xStep      =    7;
-yStep      =   15;
+xStep      = 3;
+yStep      = 7;
 
-maxIter    =  200;
+maxIter    = 300;
 
 for (y0 = topEdge; y0 > bottomEdge; y0 = y0 - yStep) {
     for (x0 = leftEdge; x0 < rightEdge; x0 = x0 + xStep) {
@@ -71,7 +71,7 @@ for (y0 = topEdge; y0 > bottomEdge; y0 = y0 - yStep) {
                 
                 i = maxIter;
             } else {
-                println(x_x + y_y);
+                // println(x_x + y_y);
             }
 
             y = ((x * y) / 100.0) + y0;
@@ -79,8 +79,8 @@ for (y0 = topEdge; y0 > bottomEdge; y0 = y0 - yStep) {
             i = i + 1;
         }
 
-        //print(theChar);
+        print(theChar);
     }
 
-    //print("\n");
+    print("\n");
 }

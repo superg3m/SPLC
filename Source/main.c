@@ -2,7 +2,7 @@
 #include <spl_parser.h>
 #include <interpreter.h>
 
-#define TOTAL_MEMORY_SIZE KiloBytes(400)
+#define TOTAL_MEMORY_SIZE KiloBytes(800)
 void* custom_alloc_callback(CKG_Allocator* allocator, size_t allocation_size) {
 	CKG_Arena* arena = (CKG_Arena*)allocator->ctx;
 	return ckg_arena_push_custom(arena, allocation_size);
@@ -14,10 +14,13 @@ void custom_free_callback(CKG_Allocator* allocator, void* data) {
 	return;
 }
 
+// Date: May 21, 2025
+// TODO(Jovanni): Make it so arenas have some sort of free list and pop ability so I can recycle memory.
+
 int main(int argc, char** argv) {
 	u8 program_stack_memory[TOTAL_MEMORY_SIZE] = {0};
 	CKG_Arena arena = ckg_arena_create_fixed(program_stack_memory, TOTAL_MEMORY_SIZE, true);
-	// ckg_bind_custom_allocator(custom_alloc_callback, custom_free_callback, &arena);
+	ckg_bind_custom_allocator(custom_alloc_callback, custom_free_callback, &arena);
 
 	if (argc != 2) {
 		CKG_LOG_ERROR("Usage: splc <filename>\n");

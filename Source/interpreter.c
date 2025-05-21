@@ -62,13 +62,6 @@ internal InterpreterType interpreter_promote_type(InterpreterType a, Interpreter
         return INTERPRETER_FLOAT;
     }
 
-
-    if ((a == INTERPRETER_FLOAT && b == INTERPRETER_INTEGER) ||
-        (a == INTERPRETER_INTEGER && b == INTERPRETER_FLOAT) ||
-        (a == INTERPRETER_FLOAT && b == INTERPRETER_FLOAT)) {
-        return INTERPRETER_FLOAT;
-    }
-
     if (a == INTERPRETER_INTEGER && b == INTERPRETER_INTEGER) {
         return INTERPRETER_INTEGER;
     }
@@ -157,11 +150,10 @@ internal InterpreterReturn interpret_expression(Expression* expression, Scope* s
         InterpreterReturn right = interpret_expression(expression->binary->right, scope);
 
         SPL_TokenType op = expression->binary->operation.type;
-
         ret.line = expression->binary->line;
-        if (op == SPL_TOKEN_PLUS) {
-            InterpreterType promoted = interpreter_promote_type(left.type, right.type);
+        InterpreterType promoted = interpreter_promote_type(left.type, right.type);
 
+        if (op == SPL_TOKEN_PLUS) {
             if (promoted == INTERPRETER_FLOAT) {
                 ret.type = INTERPRETER_FLOAT;
                 ret.f = interpreter_as_float(left) + interpreter_as_float(right);
@@ -177,19 +169,43 @@ internal InterpreterReturn interpret_expression(Expression* expression, Scope* s
                     interpreter_type_strings[right.type]);
             }
         } else if (op == SPL_TOKEN_MINUS) {
-            if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
+            if (promoted == INTERPRETER_FLOAT) {
+                ret.type = INTERPRETER_FLOAT;
+                ret.f = interpreter_as_float(left) - interpreter_as_float(right);
+            } else if (promoted == INTERPRETER_INTEGER) {
                 ret.type = INTERPRETER_INTEGER;
-                ret.i = left.i - right.i;
+                ret.i = interpreter_as_int(left) - interpreter_as_int(right);
+            } else {
+                interpreter_runtime_error(expression->binary->line,
+                    "Unsupported promotion for '*' between '%s' and '%s'",
+                    interpreter_type_strings[left.type],
+                    interpreter_type_strings[right.type]);
             }
         } else if (op == SPL_TOKEN_STAR) {
-            if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
+            if (promoted == INTERPRETER_FLOAT) {
+                ret.type = INTERPRETER_FLOAT;
+                ret.f = interpreter_as_float(left) * interpreter_as_float(right);
+            } else if (promoted == INTERPRETER_INTEGER) {
                 ret.type = INTERPRETER_INTEGER;
-                ret.i = left.i * right.i;
+                ret.i = interpreter_as_int(left) * interpreter_as_int(right);
+            } else {
+                interpreter_runtime_error(expression->binary->line,
+                    "Unsupported promotion for '*' between '%s' and '%s'",
+                    interpreter_type_strings[left.type],
+                    interpreter_type_strings[right.type]);
             }
         } else if (op == SPL_TOKEN_DIVISION) {
-            if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
+            if (promoted == INTERPRETER_FLOAT) {
+                ret.type = INTERPRETER_FLOAT;
+                ret.f = interpreter_as_float(left) / interpreter_as_float(right);
+            } else if (promoted == INTERPRETER_INTEGER) {
                 ret.type = INTERPRETER_INTEGER;
-                ret.i = left.i / right.i;
+                ret.i = interpreter_as_int(left) / interpreter_as_int(right);
+            } else {
+                interpreter_runtime_error(expression->binary->line,
+                    "Unsupported promotion for '/' between '%s' and '%s'",
+                    interpreter_type_strings[left.type],
+                    interpreter_type_strings[right.type]);
             }
         } else if (op == SPL_TOKEN_MODULUS) {
             if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
@@ -207,34 +223,76 @@ internal InterpreterReturn interpret_expression(Expression* expression, Scope* s
                 ret.i = left.i & right.i;
             }
         } else if (op == SPL_TOKEN_GREATER_THAN) {
-            if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
-                ret.type = INTERPRETER_BOOL;
-                ret.b = left.i > right.i;
+            ret.type = INTERPRETER_BOOL;
+            if (promoted == INTERPRETER_FLOAT) {
+                ret.b = interpreter_as_float(left) > interpreter_as_float(right);
+            } else if (promoted == INTERPRETER_INTEGER) {
+                ret.b = interpreter_as_int(left) > interpreter_as_int(right);
+            } else {
+                interpreter_runtime_error(expression->binary->line,
+                    "Unsupported promotion for '>' between '%s' and '%s'",
+                    interpreter_type_strings[left.type],
+                    interpreter_type_strings[right.type]);
             }
         } else if (op == SPL_TOKEN_GREATER_THAN_EQUALS) {
-            if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
-                ret.type = INTERPRETER_BOOL;
-                ret.b = left.i >= right.i;
+            ret.type = INTERPRETER_BOOL;
+            if (promoted == INTERPRETER_FLOAT) {
+                ret.b = interpreter_as_float(left) >= interpreter_as_float(right);
+            } else if (promoted == INTERPRETER_INTEGER) {
+                ret.b = interpreter_as_int(left) >= interpreter_as_int(right);
+            } else {
+                interpreter_runtime_error(expression->binary->line,
+                    "Unsupported promotion for '>=' between '%s' and '%s'",
+                    interpreter_type_strings[left.type],
+                    interpreter_type_strings[right.type]);
             }
         } else if (op == SPL_TOKEN_LESS_THAN) {
-            if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
-                ret.type = INTERPRETER_BOOL;
-                ret.b = left.i < right.i;
+            ret.type = INTERPRETER_BOOL;
+            if (promoted == INTERPRETER_FLOAT) {
+                ret.b = interpreter_as_float(left) < interpreter_as_float(right);
+            } else if (promoted == INTERPRETER_INTEGER) {
+                ret.b = interpreter_as_int(left) < interpreter_as_int(right);
+            } else {
+                interpreter_runtime_error(expression->binary->line,
+                    "Unsupported promotion for '<' between '%s' and '%s'",
+                    interpreter_type_strings[left.type],
+                    interpreter_type_strings[right.type]);
             }
         } else if (op == SPL_TOKEN_LESS_THAN_EQUALS) {
-            if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
-                ret.type = INTERPRETER_BOOL;
-                ret.b = left.i <= right.i;
+            ret.type = INTERPRETER_BOOL;
+            if (promoted == INTERPRETER_FLOAT) {
+                ret.b = interpreter_as_float(left) <= interpreter_as_float(right);
+            } else if (promoted == INTERPRETER_INTEGER) {
+                ret.b = interpreter_as_int(left) <= interpreter_as_int(right);
+            } else {
+                interpreter_runtime_error(expression->binary->line,
+                    "Unsupported promotion for '<=' between '%s' and '%s'",
+                    interpreter_type_strings[left.type],
+                    interpreter_type_strings[right.type]);
             }
         } else if (op == SPL_TOKEN_EQUALS) {
-            if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
-                ret.type = INTERPRETER_BOOL;
-                ret.b = left.i == right.i;
+            ret.type = INTERPRETER_BOOL;
+            if (promoted == INTERPRETER_FLOAT) {
+                ret.b = interpreter_as_float(left) == interpreter_as_float(right);
+            } else if (promoted == INTERPRETER_INTEGER) {
+                ret.b = interpreter_as_int(left) == interpreter_as_int(right);
+            } else {
+                interpreter_runtime_error(expression->binary->line,
+                    "Unsupported promotion for '==' between '%s' and '%s'",
+                    interpreter_type_strings[left.type],
+                    interpreter_type_strings[right.type]);
             }
         } else if (op == SPL_TOKEN_NOT_EQUALS) {
-            if (left.type == INTERPRETER_INTEGER && right.type == INTERPRETER_INTEGER) {
-                ret.type = INTERPRETER_BOOL;
-                ret.b = left.i != right.i;
+            ret.type = INTERPRETER_BOOL;
+            if (promoted == INTERPRETER_FLOAT) {
+                ret.b = interpreter_as_float(left) != interpreter_as_float(right);
+            } else if (promoted == INTERPRETER_INTEGER) {
+                ret.b = interpreter_as_int(left) != interpreter_as_int(right);
+            } else {
+                interpreter_runtime_error(expression->binary->line,
+                    "Unsupported promotion for '!=' between '%s' and '%s'",
+                    interpreter_type_strings[left.type],
+                    interpreter_type_strings[right.type]);
             }
         }
 
@@ -314,7 +372,7 @@ internal void interpret_statement(Statement* statement, Scope* scope) {
         if (value.type == INTERPRETER_INTEGER) {
             printf("%d", value.i);
         } if (value.type == INTERPRETER_FLOAT) {
-            printf("%f", (float)value.f);
+            printf("%lf", value.f);
         } else if (value.type == INTERPRETER_STRING) {
             value = interpreter_to_string(value);
             char* s = ckg_str_sprint(NULLPTR, "%.*s", value.str.length, value.str.data);
@@ -329,7 +387,7 @@ internal void interpret_statement(Statement* statement, Scope* scope) {
         if (value.type == INTERPRETER_INTEGER) {
             printf("%d\n", value.i);
         } if (value.type == INTERPRETER_FLOAT) {
-            printf("%f\n", (float)value.f);
+            printf("%lf\n", value.f);
         } else if (value.type == INTERPRETER_STRING) {
             value = interpreter_to_string(value);
             char* s = ckg_str_sprint(NULLPTR, "%.*s", value.str.length, value.str.data);
