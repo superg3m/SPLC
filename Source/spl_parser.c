@@ -270,6 +270,7 @@ Statement* parse_statement(Parser* parser, bool requires_semi_colon) {
     }
 
     parser_report_error(parser, "No statements to interpret; this is not a valid program.\n");
+    return NULLPTR;
 }
 
 Program* parse_program(Parser* parser) {
