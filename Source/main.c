@@ -2,25 +2,26 @@
 #include <spl_parser.h>
 #include <interpreter.h>
 
-#define TOTAL_MEMORY_SIZE KiloBytes(800)
+#define TOTAL_STACK_MEMORY_SIZE KiloBytes(800)
+#define TOTAL_HEAP_MEMORY_SIZE MegaBytes(35)
 void* custom_alloc_callback(CKG_Allocator* allocator, size_t allocation_size) {
 	CKG_Arena* arena = (CKG_Arena*)allocator->ctx;
 	return ckg_arena_push_custom(arena, allocation_size);
 }
 
 void custom_free_callback(CKG_Allocator* allocator, void* data) {
-	(void)allocator; 
-	(void)data;
-	return;
+	CKG_Arena* arena = (CKG_Arena*)allocator->ctx;
+	ckg_arena_pop_data(arena, data);
 }
 
 // Date: May 21, 2025
 // TODO(Jovanni): Make it so arenas have some sort of free list and pop ability so I can recycle memory.
 
 int main(int argc, char** argv) {
-	u8 program_stack_memory[TOTAL_MEMORY_SIZE] = {0};
-	CKG_Arena arena = ckg_arena_create_fixed(program_stack_memory, TOTAL_MEMORY_SIZE, true);
-	// ckg_bind_custom_allocator(custom_alloc_callback, custom_free_callback, &arena);
+	// u8 program_stack_memory[TOTAL_STACK_MEMORY_SIZE] = {0};
+	void* program_heap_memory = ckg_alloc(TOTAL_HEAP_MEMORY_SIZE);
+	CKG_Arena arena = ckg_arena_create_fixed(program_heap_memory, TOTAL_HEAP_MEMORY_SIZE, false);
+	ckg_bind_custom_allocator(custom_alloc_callback, custom_free_callback, &arena);
 
 	if (argc != 2) {
 		CKG_LOG_ERROR("Usage: splc <filename>\n");
@@ -51,5 +52,7 @@ int main(int argc, char** argv) {
 	interpret_ast(ast);
 
 	ckg_vector_free(token_stream);
+
+	CKG_LOG_SUCCESS("used/cap: %zu / %zu = %f\n", arena.used, arena.capacity, (float)arena.used / (float)arena.capacity);
 	ckg_arena_free(&arena);
 }

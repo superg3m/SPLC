@@ -278,7 +278,7 @@ SPL_Token* lexer_consume_token_stream(Lexer* lexer, char* source, u64 source_len
         lexer_consume_next_token(lexer);
     }
 
-    ckg_vector_push(lexer->tokens, SPL_TOKEN_CREATE_CUSTOM(SPL_TOKEN_EOF, CKG_SV_EMPTY(), lexer->line));
+    ckg_vector_push(lexer->tokens, SPL_TOKEN_CREATE_CUSTOM(SPL_TOKEN_EOF, CKG_SV_NULL(), lexer->line));
 
     return lexer->tokens;
 }
