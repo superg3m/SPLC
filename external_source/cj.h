@@ -1182,27 +1182,6 @@
         return ret;
     }
 
-    int calculate_precision(double value) {
-        char buffer[64];
-        
-        snprintf(buffer, sizeof(buffer), "%.15g", value);
-        u64 buffer_length = cj_cstr_length(buffer);
-
-
-        if (!cj_cstr_index_of(buffer, buffer_length, CJ_LIT_ARG("."))) {
-            return 0;
-        }
-
-        char* end = buffer + (buffer_length - 1);
-        int precision_count = 0;
-        while (*end != '.') {
-            end--;
-            precision_count++;
-        }
-
-        return precision_count;
-    }
-
     internal char* cj_format_json_with_indent(size_t total_allocation_size, CJ_Arena* arena, u64 num_json, char delimitor_left, char delimitor_right, char** buffers, u64 count) {
         u64 ret_length = 0;
         u64 spaces_allocation_size = 0;
@@ -1239,8 +1218,7 @@
             } break;
 
             case CJ_TYPE_FLOAT: {
-                int precision = calculate_precision(root->cj_float);
-                return cj_sprint(arena, NULLPTR, "%.*f", precision, root->cj_float);
+                return cj_sprint(arena, NULLPTR, "%f", root->cj_float);
             } break;
 
             case CJ_TYPE_STRING: {

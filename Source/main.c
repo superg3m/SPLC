@@ -16,7 +16,6 @@ void custom_free_callback(CKG_Allocator* allocator, void* data) {
 
 // Date: May 21, 2025
 // TODO(Jovanni): Make it so arenas have some sort of free list and pop ability so I can recycle memory.
-
 int main(int argc, char** argv) {
 	// u8 program_stack_memory[TOTAL_STACK_MEMORY_SIZE] = {0};
 	void* program_heap_memory = ckg_alloc(TOTAL_HEAP_MEMORY_SIZE);
@@ -55,4 +54,6 @@ int main(int argc, char** argv) {
 
 	CKG_LOG_SUCCESS("used/cap: %zu / %zu = %f\n", arena.used, arena.capacity, (float)arena.used / (float)arena.capacity);
 	ckg_arena_free(&arena);
+
+	return 0;
 }

@@ -23,8 +23,8 @@ pc: ProjectConfig = ProjectConfig(
         Dependency("cj")
     ],
     project_debug_with_visual_studio = False,
-    project_rebuild_project_dependencies = True,
-    #project_executable_names = ["splc.exe ../../SPL_Source/test.spl"]
+    project_rebuild_project_dependencies = False,
+    # project_executable_names = ["splc.exe ../../SPL_Source/test.spl"]
     project_executable_names = ["splc.exe ../../SPL_Source/Mandelbrot_Set.spl"]
 )
 

@@ -104,7 +104,7 @@ internal JSON* ast_to_json_helper(JSON* root, ASTNode* node, CJ_Arena* arena) {
             cj_push(root, "PrintStatement", ast_to_json_helper(print_json, ast_node_create(AST_NODE_EXPRESSION, inner_expression), arena));
 
             return root;
-        } if (stmt->type == STATEMENT_TYPE_PRINTLN) {
+        } else if (stmt->type == STATEMENT_TYPE_PRINTLN) {
             Expression* inner_expression = stmt->println_statement->value;
             JSON* print_json = cj_create(arena);
             cj_push(root, "PrintLnStatement", ast_to_json_helper(print_json, ast_node_create(AST_NODE_EXPRESSION, inner_expression), arena));
@@ -134,7 +134,7 @@ internal JSON* ast_to_json_helper(JSON* root, ASTNode* node, CJ_Arena* arena) {
             JSON* if_code_block_array = cj_array_create(arena);
             JSON* else_code_block_array = cj_array_create(arena);
 
-            for (int i = 0; i < ckg_vector_count(if_code_block); i++) {
+            for (int i = 0; if_code_block && i < ckg_vector_count(if_code_block); i++) {
                 JSON* if_statement_json = cj_create(arena);
                 cj_array_push(if_code_block_array, ast_to_json_helper(if_statement_json, ast_node_create(AST_NODE_STATEMENT, (void*)if_code_block[i]), arena));
             }
@@ -159,7 +159,7 @@ internal JSON* ast_to_json_helper(JSON* root, ASTNode* node, CJ_Arena* arena) {
             JSON* value_json = cj_create(arena);
             JSON* while_code_block_array = cj_array_create(arena);
 
-            for (int i = 0; i < ckg_vector_count(while_code_block); i++) {
+            for (int i = 0; while_code_block && i < ckg_vector_count(while_code_block); i++) {
                 JSON* while_statement_json = cj_create(arena);
                 cj_array_push(while_code_block_array, ast_to_json_helper(while_statement_json, ast_node_create(AST_NODE_STATEMENT, (void*)while_code_block[i]), arena));
             }
@@ -183,7 +183,7 @@ internal JSON* ast_to_json_helper(JSON* root, ASTNode* node, CJ_Arena* arena) {
 
             JSON* for_code_block_array = cj_array_create(arena);
 
-            for (int i = 0; i < ckg_vector_count(for_code_block); i++) {
+            for (int i = 0; for_code_block && i < ckg_vector_count(for_code_block); i++) {
                 JSON* for_statement_json = cj_create(arena);
                 cj_array_push(for_code_block_array, ast_to_json_helper(for_statement_json, ast_node_create(AST_NODE_STATEMENT, (void*)for_code_block[i]), arena));
             }
@@ -201,7 +201,7 @@ internal JSON* ast_to_json_helper(JSON* root, ASTNode* node, CJ_Arena* arena) {
         Statement** statements = node->program->statements;
 
         JSON* nested_array = cj_array_create(arena);
-        for (int i = 0; i < ckg_vector_count(statements); i++) {
+        for (int i = 0;  statements && i < ckg_vector_count(statements); i++) {
             JSON* statement_json = cj_create(arena);
             cj_array_push(nested_array, ast_to_json_helper(statement_json, ast_node_create(AST_NODE_STATEMENT, statements[i]), arena));
         }
@@ -225,6 +225,8 @@ void ast_pretty_print(ASTNode* ast) {
     CJ_Arena* arena = cj_arena_create(0);
 
     JSON* json = ast_to_json(ast, arena);
+    ckg_assert_msg(json, "Failed to jsonify ast\n");
+
     char* str = cj_to_string(json);
     printf("%s\n", str);
 
