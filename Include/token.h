@@ -146,5 +146,5 @@ SPL_Token spl_token_from_string(CKG_StringView sv, int line);
 #define SPL_TOKEN_CREATE_CUSTOM(token_type, name, line) (SPL_Token){(token_type), (name), 0, (line)}
 
 void token_print(SPL_Token token, char* indent);
-SPL_TokenType token_get_keyword(char* str, u64 str_length);
-SPL_TokenType token_get_syntax(char* str, u64 str_length);
+SPL_TokenType token_get_keyword(const char* str, u64 str_length);
+SPL_TokenType token_get_syntax(const char* str, u64 str_length);

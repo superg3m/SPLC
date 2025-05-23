@@ -60,7 +60,7 @@ SPL_Token spl_token_from_string(CKG_StringView sv, int line) {
 
 // Date: May 13, 2025
 // NOTE(Jovanni): REALISTICALLY THIS SHOULD BE A HASHTABLE...
-SPL_TokenType token_get_keyword(char* str, u64 str_length) {
+SPL_TokenType token_get_keyword(const char* str, u64 str_length) {
     if (ckg_str_equal(str, str_length, CKG_LIT_ARG("if"))) {
         return SPL_TOKEN_IF;
     } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG("else"))) {
@@ -88,7 +88,7 @@ SPL_TokenType token_get_keyword(char* str, u64 str_length) {
 
 // Date: May 13, 2025
 // NOTE(Jovanni): REALISTICALLY THIS SHOULD BE A HASHTABLE...
-SPL_TokenType token_get_syntax(char* str, u64 str_length) {
+SPL_TokenType token_get_syntax(const char* str, u64 str_length) {
     if (ckg_str_equal(str, str_length, CKG_LIT_ARG("="))) {
         return SPL_TOKEN_ASSIGNMENT;
     } else if (ckg_str_equal(str, str_length, CKG_LIT_ARG("%"))) {
