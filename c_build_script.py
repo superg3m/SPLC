@@ -48,7 +48,7 @@ elif IS_LINUX() and not C_BUILD_IS_DEPENDENCY():
 # Do different things depending on the platform
 if cc.compiler_name == "cl":
     cc.compiler_warning_level = "4"
-    cc.compiler_disable_specific_warnings = ["5105", "4668", "4820", "4996", "4189", "4702"]
+    cc.compiler_disable_specific_warnings = ["5105", "4668", "4820", "4996", "4189", "4702", "4116"]
 else:
     cc.compiler_warning_level = "all"
     cc.compiler_disable_specific_warnings = ["deprecated", "parentheses", "missing-braces", "switch", "unused-variable", "unused-result"]
