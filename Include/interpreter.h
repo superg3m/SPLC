@@ -10,7 +10,7 @@ typedef enum InterpreterType {
     INTERPRETER_COUNT
 } InterpreterType;
 
-internal char* interpreter_type_strings[INTERPRETER_COUNT] = {
+static char* interpreter_type_strings[INTERPRETER_COUNT] = {
     stringify(INTERPRETER_RETURN_INVALID),
     stringify(INTERPRETER_INTEGER),
     stringify(INTERPRETER_FLOAT),

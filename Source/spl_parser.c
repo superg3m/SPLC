@@ -10,7 +10,7 @@
 //                      └── Unary (+, -, !, ~, &, *)
 //                           └── Primary (literals, identifiers, etc.)
 
-internal SPL_Token parser_peek_nth_token(Parser* parser, int n) {
+static SPL_Token parser_peek_nth_token(Parser* parser, int n) {
     if (parser->current + n > ckg_vector_count(parser->tokens) - 1) {
         return SPL_TOKEN_CREATE_CUSTOM(SPL_TOKEN_ILLEGAL_TOKEN, "", -1);
     }
@@ -18,11 +18,11 @@ internal SPL_Token parser_peek_nth_token(Parser* parser, int n) {
     return parser->tokens[parser->current + n];
 }
 
-internal SPL_Token parser_previous_token(Parser* parser) {
+static SPL_Token parser_previous_token(Parser* parser) {
     return parser->tokens[parser->current - 1];
 }
 
-internal void parser_report_error(Parser* parser, char* fmt, ...) {
+static void parser_report_error(Parser* parser, char* fmt, ...) {
     SPL_Token token = parser_peek_nth_token(parser, 0);
 
     va_list args;
@@ -34,14 +34,14 @@ internal void parser_report_error(Parser* parser, char* fmt, ...) {
     exit(-1);
 }
 
-internal SPL_Token parser_consume_next_token(Parser* parser) {
+static SPL_Token parser_consume_next_token(Parser* parser) {
     parser->tok = parser->tokens[parser->current];
     parser->current += 1;
 
     return parser->tok;
 }
 
-internal void parser_expect(Parser* parser, SPL_TokenType expected_type) {
+static void parser_expect(Parser* parser, SPL_TokenType expected_type) {
     if (expected_type && parser_peek_nth_token(parser, 0).type != expected_type) {
         parser_report_error(parser, "Expected: %s | Got: %s\n", token_strings[expected_type], token_strings[parser_peek_nth_token(parser, 0).type]);
     }
@@ -49,7 +49,7 @@ internal void parser_expect(Parser* parser, SPL_TokenType expected_type) {
     parser_consume_next_token(parser);
 }
 
-internal bool parser_consume_on_match(Parser* parser, SPL_TokenType expected_type) {
+static bool parser_consume_on_match(Parser* parser, SPL_TokenType expected_type) {
     if (parser_peek_nth_token(parser, 0).type == expected_type) {
         parser_consume_next_token(parser);
         return true;
@@ -58,9 +58,9 @@ internal bool parser_consume_on_match(Parser* parser, SPL_TokenType expected_typ
     return false;
 }
 
-internal Expression* parse_expression(Parser* parser);
+static Expression* parse_expression(Parser* parser);
 // <primary> ::= INTEGER | FLOAT | TRUE | FALSE | STRING | PRIMITIVE_TYPE | IDENTIFIER | "(" <expression> ")"
-internal Expression* parse_primary_expression(Parser* parser) {
+static Expression* parse_primary_expression(Parser* parser) {
     if (parser_consume_on_match(parser, SPL_TOKEN_INTEGER_LITERAL)) {
         SPL_Token tok = parser_previous_token(parser);
         return integer_expression_create(parser->tok.i, tok.line);
@@ -87,7 +87,7 @@ internal Expression* parse_primary_expression(Parser* parser) {
 
 // sizeof removed for now
 // <unary> ::= (("+" | "-" | "!" | "*" | "&" | "~") <unary>)* | <primary>
-internal Expression* parse_unary_expression(Parser* parser) {
+static Expression* parse_unary_expression(Parser* parser) {
     if (parser_consume_on_match(parser, SPL_TOKEN_PLUS) ||
         parser_consume_on_match(parser, SPL_TOKEN_MINUS) ||
         parser_consume_on_match(parser, SPL_TOKEN_NOT) ||
@@ -104,7 +104,7 @@ internal Expression* parse_unary_expression(Parser* parser) {
 }
 
 // <multiplicative> ::= <unary> (("*" | "/" | "%" | "<<" | ">>") <unary>)*
-internal Expression* parse_multiplicative_expression(Parser* parser) {
+static Expression* parse_multiplicative_expression(Parser* parser) {
     Expression* expression = parse_unary_expression(parser);
 
     while (parser_consume_on_match(parser, SPL_TOKEN_STAR) ||
@@ -121,7 +121,7 @@ internal Expression* parse_multiplicative_expression(Parser* parser) {
     return expression;
 }
 
-internal Expression* parse_additive_expression(Parser* parser) {
+static Expression* parse_additive_expression(Parser* parser) {
     Expression* expression = parse_multiplicative_expression(parser);
     while (parser_consume_on_match(parser, SPL_TOKEN_PLUS) ||
            parser_consume_on_match(parser, SPL_TOKEN_MINUS) ||
@@ -139,7 +139,7 @@ internal Expression* parse_additive_expression(Parser* parser) {
 }
 
 // <comparison> ::= <additive> (("==" | "!=" | "<" | "<=" | ">" | ">=") <additive>)*
-internal Expression* parse_comparison_expression(Parser* parser) {
+static Expression* parse_comparison_expression(Parser* parser) {
     Expression* expression = parse_additive_expression(parser);
     while (parser_consume_on_match(parser, SPL_TOKEN_EQUALS) || parser_consume_on_match(parser, SPL_TOKEN_NOT_EQUALS) ||
            parser_consume_on_match(parser, SPL_TOKEN_LESS_THAN) || parser_consume_on_match(parser, SPL_TOKEN_LESS_THAN_EQUALS) ||
@@ -154,7 +154,7 @@ internal Expression* parse_comparison_expression(Parser* parser) {
 }
 
 // <logical>    ::= <comparison> (("||" | "&&") <comparison>)*
-internal Expression* parse_logical_expression(Parser* parser) {
+static Expression* parse_logical_expression(Parser* parser) {
     Expression* expression = parse_comparison_expression(parser);
     while (parser_consume_on_match(parser, SPL_TOKEN_OR) || parser_consume_on_match(parser, SPL_TOKEN_AND)) {
         SPL_Token op = parser_previous_token(parser);
@@ -167,7 +167,7 @@ internal Expression* parse_logical_expression(Parser* parser) {
 }
 
 // <expression> ::= <logical_expr>
-internal Expression* parse_expression(Parser* parser) {
+static Expression* parse_expression(Parser* parser) {
     return parse_logical_expression(parser);
 }
 

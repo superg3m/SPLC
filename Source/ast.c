@@ -23,7 +23,7 @@ Program* program_create(Statement** statements) {
     return ret;
 }
 
-internal JSON* ast_to_json_helper(JSON* root, ASTNode* node, CJ_Arena* arena) {
+static JSON* ast_to_json_helper(JSON* root, ASTNode* node, CJ_Arena* arena) {
     #define TO_CJ_SV(sv) (CJ_StringView){sv.data, 0, sv.length}
 
     if (node->type == AST_NODE_EXPRESSION) {
@@ -214,7 +214,7 @@ internal JSON* ast_to_json_helper(JSON* root, ASTNode* node, CJ_Arena* arena) {
     return NULL;
 }
 
-internal JSON* ast_to_json(ASTNode* ast, CJ_Arena* arena) {
+static JSON* ast_to_json(ASTNode* ast, CJ_Arena* arena) {
     JSON* root = cj_create(arena);
     return ast_to_json_helper(root, ast, arena);;
 }

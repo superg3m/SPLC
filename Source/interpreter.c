@@ -4,14 +4,14 @@
     CKG_LOG_ERROR("Error Line: %d | " fmt, line, ##__VA_ARGS__); \
     ckg_assert(false)
 
-internal Scope scope_create(Scope* parent_scope) {
+static Scope scope_create(Scope* parent_scope) {
     Scope scope = {0};
     scope.parent_scope = parent_scope;
     ckg_hashmap_init_string_view_hash(scope.variables, CKG_StringView, InterpreterReturn);
     return scope;
 }
 
-internal InterpreterReturn scope_try_get(Scope* scope, CKG_StringView identifier) {
+static InterpreterReturn scope_try_get(Scope* scope, CKG_StringView identifier) {
     if (!ckg_hashmap_has(scope->variables, identifier)) {
         return INVALID_INTERPRETER_RETURN();
     }
@@ -19,7 +19,7 @@ internal InterpreterReturn scope_try_get(Scope* scope, CKG_StringView identifier
     return ckg_hashmap_get(scope->variables, identifier);
 }
 
-internal InterpreterReturn scope_load(Scope* scope, CKG_StringView identifier) {
+static InterpreterReturn scope_load(Scope* scope, CKG_StringView identifier) {
     InterpreterReturn ret = scope_try_get(scope, identifier);
     if (ret.type == INTERPRETER_RETURN_INVALID) {
         Scope* current_scope = scope->parent_scope;
@@ -32,7 +32,7 @@ internal InterpreterReturn scope_load(Scope* scope, CKG_StringView identifier) {
     return ret;
 }
 
-internal void scope_store(Scope* scope, CKG_StringView identifier, InterpreterReturn value) {
+static void scope_store(Scope* scope, CKG_StringView identifier, InterpreterReturn value) {
     Scope* current_scope = scope->parent_scope;
     while (current_scope) {
         if (ckg_hashmap_has(current_scope->variables, identifier)) {
@@ -51,7 +51,7 @@ internal void scope_store(Scope* scope, CKG_StringView identifier, InterpreterRe
     ckg_hashmap_put(scope->variables, identifier, value);
 }
 
-internal InterpreterType interpreter_promote_type(InterpreterType a, InterpreterType b) {
+static InterpreterType interpreter_promote_type(InterpreterType a, InterpreterType b) {
     if (a == INTERPRETER_STRING || b == INTERPRETER_STRING) {
         return INTERPRETER_STRING;
     }
@@ -69,7 +69,7 @@ internal InterpreterType interpreter_promote_type(InterpreterType a, Interpreter
     return -1; // invalid promotion
 }
 
-internal InterpreterReturn interpreter_to_string(InterpreterReturn v) {
+static InterpreterReturn interpreter_to_string(InterpreterReturn v) {
     InterpreterReturn result = {0};
     result.type = INTERPRETER_STRING;
 
@@ -94,7 +94,7 @@ internal InterpreterReturn interpreter_to_string(InterpreterReturn v) {
     return result;
 }
 
-internal InterpreterReturn interpreter_concat(InterpreterReturn left, InterpreterReturn right) {
+static InterpreterReturn interpreter_concat(InterpreterReturn left, InterpreterReturn right) {
     InterpreterReturn result = {0};
     result.type = INTERPRETER_STRING;
 
@@ -108,15 +108,15 @@ internal InterpreterReturn interpreter_concat(InterpreterReturn left, Interprete
     return result;
 }
 
-internal double interpreter_as_float(InterpreterReturn v) {
+static double interpreter_as_float(InterpreterReturn v) {
     return v.type == INTERPRETER_FLOAT ? v.f : (double)v.i;
 }
 
-internal int interpreter_as_int(InterpreterReturn v) {
+static int interpreter_as_int(InterpreterReturn v) {
     return v.i;
 }
 
-internal InterpreterReturn interpret_expression(Expression* expression, Scope* scope) {
+static InterpreterReturn interpret_expression(Expression* expression, Scope* scope) {
     InterpreterReturn ret = INVALID_INTERPRETER_RETURN();
 
     if (expression->type == EXPRESSION_TYPE_INTEGER) {
@@ -351,7 +351,7 @@ internal InterpreterReturn interpret_expression(Expression* expression, Scope* s
 
 void interpret_statements(Statement** statements, Scope* scope);
 
-internal void unescape_newlines(char *str) {
+static void unescape_newlines(char *str) {
     char *src = str;
     char *dst = str;
 
@@ -366,7 +366,7 @@ internal void unescape_newlines(char *str) {
     *dst = '\0';
 }
 
-internal void interpret_statement(Statement* statement, Scope* scope) {
+static void interpret_statement(Statement* statement, Scope* scope) {
     if (statement->type == STATEMENT_TYPE_PRINT) {
         InterpreterReturn value = interpret_expression(statement->print_statement->value, scope);
         if (value.type == INTERPRETER_INTEGER) {

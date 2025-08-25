@@ -50,8 +50,11 @@ if cc.compiler_name == "cl":
     cc.compiler_warning_level = "4"
     cc.compiler_disable_specific_warnings = ["5105", "4668", "4820", "4996", "4189", "4702", "4116"]
 else:
-    cc.compiler_warning_level = "all"
-    cc.compiler_disable_specific_warnings = ["deprecated", "parentheses", "missing-braces", "switch", "unused-variable", "unused-result"]
+    cc.compiler_warning_level = ""
+    cc.compiler_disable_specific_warnings = [
+        "deprecated", "parentheses", "missing-braces", "switch", "unused-variable", "unused-result",
+        "unreachable-code-generic-assoc", "incompatible-pointer-types"
+    ]
 
 build_postfix = f"build_{cc.compiler_name}/{C_BUILD_BUILD_TYPE()}"
 procedures_config = {
@@ -61,7 +64,8 @@ procedures_config = {
         source_files = [
             "../../Source/*.c", 
             "../../ckg/ckg.c", 
-            "../../cj/cj.c"],
+            "../../cj/cj.c"
+        ],
         compile_time_defines = [],
         compiler_inject_into_args = [],
         include_paths = [

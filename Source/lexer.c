@@ -5,11 +5,11 @@ Lexer lexer_create() {
     return lexer;
 }
 
-internal bool lexer_is_EOF(Lexer* lexer) {
+static bool lexer_is_EOF(Lexer* lexer) {
     return lexer->right_pos >= lexer->source.length;
 }
 
-internal void lexer_consume_next_char(Lexer* lexer) {
+static void lexer_consume_next_char(Lexer* lexer) {
     lexer->c = lexer->source.data[lexer->right_pos];
 
     if (lexer->c == '\n') {
@@ -19,11 +19,11 @@ internal void lexer_consume_next_char(Lexer* lexer) {
     lexer->right_pos += 1;
 }
 
-internal bool is_whitespace(char c) {
+static bool is_whitespace(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\0';
 }
 
-internal bool lexer_consume_whitespace(Lexer* lexer) {
+static bool lexer_consume_whitespace(Lexer* lexer) {
     if (is_whitespace(lexer->c)) {
         return true;
     }
@@ -31,7 +31,7 @@ internal bool lexer_consume_whitespace(Lexer* lexer) {
     return false;
 }
 
-internal char lexer_peek_nth_char(Lexer* lexer, u64 n) {
+static char lexer_peek_nth_char(Lexer* lexer, u64 n) {
     if ((lexer->right_pos + n) >= lexer->source.length) {
         return '\0';
     }
@@ -39,11 +39,11 @@ internal char lexer_peek_nth_char(Lexer* lexer, u64 n) {
     return lexer->source.data[lexer->right_pos + n];
 }
 
-internal CKG_StringView lexer_get_scratch_buffer(Lexer* lexer) {
+static CKG_StringView lexer_get_scratch_buffer(Lexer* lexer) {
     return ckg_sv_create(lexer->source.data + lexer->left_pos, lexer->right_pos - lexer->left_pos);
 }
 
-internal void lexer_report_error(Lexer* lexer, char* msg) {
+static void lexer_report_error(Lexer* lexer, char* msg) {
     CKG_StringView scratch = lexer_get_scratch_buffer(lexer);
     CKG_LOG_ERROR("String: %.*s\n", (int)scratch.length, scratch.data); 
 
@@ -61,7 +61,7 @@ internal void lexer_report_error(Lexer* lexer, char* msg) {
     exit(-1);
 }
 
-internal bool lexer_consume_on_match(Lexer* lexer, char expected) {
+static bool lexer_consume_on_match(Lexer* lexer, char expected) {
     if (lexer_peek_nth_char(lexer, 0) != expected) {
         return false;
     }
@@ -71,7 +71,7 @@ internal bool lexer_consume_on_match(Lexer* lexer, char expected) {
 }
 
 
-internal void lexer_add_token(Lexer* lexer, SPL_TokenType token_type) {
+static void lexer_add_token(Lexer* lexer, SPL_TokenType token_type) {
     CKG_StringView name = lexer_get_scratch_buffer(lexer);
     if (token_type == SPL_TOKEN_TRUE || token_type == SPL_TOKEN_FALSE ||
         token_type == SPL_TOKEN_CHARACTER_LITERAL || token_type == SPL_TOKEN_STRING_LITERAL || 
@@ -89,7 +89,7 @@ internal void lexer_add_token(Lexer* lexer, SPL_TokenType token_type) {
     */
 }
 
-internal void lexer_consume_digit_literal(Lexer* lexer) {
+static void lexer_consume_digit_literal(Lexer* lexer) {
     SPL_TokenType token_type = SPL_TOKEN_INTEGER_LITERAL;
 
     lexer_consume_on_match(lexer, '-');
@@ -105,7 +105,7 @@ internal void lexer_consume_digit_literal(Lexer* lexer) {
     lexer_add_token(lexer, token_type);
 }
 
-internal void lexer_consume_string_literal(Lexer* lexer) {
+static void lexer_consume_string_literal(Lexer* lexer) {
     while (lexer_peek_nth_char(lexer, 0) != '\"') {
         if (lexer_is_EOF(lexer)) {
             lexer_report_error(lexer, "String literal doesn't have a closing double quote!\n");
@@ -118,7 +118,7 @@ internal void lexer_consume_string_literal(Lexer* lexer) {
     lexer_add_token(lexer, SPL_TOKEN_STRING_LITERAL);
 }
 
-internal void lexer_consume_character_literal(Lexer* lexer) {
+static void lexer_consume_character_literal(Lexer* lexer) {
     if (lexer_consume_on_match(lexer, '\'')) {
         lexer_report_error(lexer, "character literal doesn't have any ascii data in between\n");
     }
@@ -135,7 +135,7 @@ internal void lexer_consume_character_literal(Lexer* lexer) {
     lexer_add_token(lexer, SPL_TOKEN_CHARACTER_LITERAL);
 }
 
-internal bool lexer_consume_literal(Lexer* lexer) {
+static bool lexer_consume_literal(Lexer* lexer) {
     if (ckg_char_is_digit(lexer->c) || (lexer->c == '-' && ckg_char_is_digit(lexer_peek_nth_char(lexer, 0)))) {
         lexer_consume_digit_literal(lexer);
         return true;
@@ -151,7 +151,7 @@ internal bool lexer_consume_literal(Lexer* lexer) {
 }
 
 
-internal bool lexer_try_consume_word(Lexer* lexer) {
+static bool lexer_try_consume_word(Lexer* lexer) {
     if (!ckg_char_is_alpha(lexer->c)) {
         return false;
     }
@@ -167,7 +167,7 @@ internal bool lexer_try_consume_word(Lexer* lexer) {
     return true;
 }
 
-internal bool lexer_consume_word(Lexer* lexer) {
+static bool lexer_consume_word(Lexer* lexer) {
     if (!lexer_try_consume_word(lexer)) {
         return false;
     }
@@ -184,13 +184,13 @@ internal bool lexer_consume_word(Lexer* lexer) {
     return true;
 }
 
-internal void lexer_consume_until_new_line(Lexer* lexer) {
+static void lexer_consume_until_new_line(Lexer* lexer) {
     while (!lexer_is_EOF(lexer) && lexer_peek_nth_char(lexer, 0) != '\n') {
         lexer_consume_next_char(lexer);
     }
 }
 
-internal bool lexer_consume_syntax(Lexer* lexer) {
+static bool lexer_consume_syntax(Lexer* lexer) {
     if (lexer->c == '/') {
         if (lexer_consume_on_match(lexer, '/')) {
             lexer_consume_until_new_line(lexer);
@@ -253,7 +253,7 @@ internal bool lexer_consume_syntax(Lexer* lexer) {
     return false;
 }
 
-internal void lexer_consume_next_token(Lexer* lexer) {
+static void lexer_consume_next_token(Lexer* lexer) {
     lexer->left_pos = lexer->right_pos;
     lexer_consume_next_char(lexer);
 

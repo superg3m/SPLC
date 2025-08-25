@@ -43,8 +43,6 @@
     #undef MIN
     #undef MAX
     #undef CLAMP
-    #undef local_persist
-    #undef internal
     #undef FIRST_DIGIT
     #undef GET_BIT
     #undef SET_BIT
@@ -88,9 +86,6 @@
     #define MIN(a, b) (((a) < (b)) ? (a) : (b))
     #define MAX(a, b) (((a) > (b)) ? (a) : (b))
     #define CLAMP(value, min_value, max_value) (MIN(MAX(value, min_value), max_value))
-
-    #define local_persist static
-    #define internal static
 
     #define FIRST_DIGIT(number) ((int)number % 10);
     #define GET_BIT(number, bit_to_check) ((number & (1 << bit_to_check)) >> bit_to_check)
@@ -536,7 +531,7 @@
      * @param node 
      * @return CJ_Node* 
      */
-    internal CJ_Node* MACRO_cj_node_free(CJ_LinkedList* linked_list, CJ_Node* node) {
+    static CJ_Node* MACRO_cj_node_free(CJ_LinkedList* linked_list, CJ_Node* node) {
         cj_assert(linked_list);
         cj_assert(node);
         node->element_size_in_bytes = 0;
@@ -555,7 +550,7 @@
      * @param node 
      * @return CJ_Node* 
      */
-    internal CJ_Node* MACRO_cj_node_data_free(CJ_LinkedList* linked_list, CJ_Node* node) {
+    static CJ_Node* MACRO_cj_node_data_free(CJ_LinkedList* linked_list, CJ_Node* node) {
         cj_assert(linked_list);
         cj_assert(node);
         cj_assert(node->data);
@@ -955,7 +950,7 @@
         return arena->flag == flag;
     }
 
-    internal CJ_ArenaPage* cj_arena_page_create(size_t allocation_size) {
+    static CJ_ArenaPage* cj_arena_page_create(size_t allocation_size) {
         CJ_ArenaPage* ret = (CJ_ArenaPage*)cj_alloc(sizeof(CJ_ArenaPage));
         ret->used = 0;
         ret->capacity = allocation_size;
@@ -1142,12 +1137,12 @@
 #endif
 
 #if defined (CJ_IMPL_FORMATTED_BUFFER)
-    internal char* global_intend = "    ";
+    static char* global_intend = "    ";
     void cj_set_context_indent(char* new_indent) {
         global_intend = new_indent;
     }
 
-    internal char* generateSpaces(CJ_Arena* arena, u64 number_of_spaces) {
+    static char* generateSpaces(CJ_Arena* arena, u64 number_of_spaces) {
         char* ret = MACRO_cj_arena_push(arena, (sizeof(char) * number_of_spaces) + 1);
         for (u64 i = 0; i < number_of_spaces; i++) {
             ret[i] = ' ';
@@ -1182,7 +1177,7 @@
         return ret;
     }
 
-    internal char* cj_format_json_with_indent(size_t total_allocation_size, CJ_Arena* arena, u64 num_json, char delimitor_left, char delimitor_right, char** buffers, u64 count) {
+    static char* cj_format_json_with_indent(size_t total_allocation_size, CJ_Arena* arena, u64 num_json, char delimitor_left, char delimitor_right, char** buffers, u64 count) {
         u64 ret_length = 0;
         u64 spaces_allocation_size = 0;
 
@@ -1206,7 +1201,7 @@
         return ret;
     }
 
-    internal char* cj_to_string_helper(CJ_Arena* arena, JSON* root, int depth) {
+    static char* cj_to_string_helper(CJ_Arena* arena, JSON* root, int depth) {
         switch (root->type) {
             case CJ_TYPE_BOOL: {
                 char* bool_string = root->cj_bool ? "true" : "false"; 
@@ -1339,7 +1334,7 @@
 
     const char* cj_tokenTypeToString(CJ_TokenType type);
 
-    internal const char* lookup_table[CJ_TOKEN_COUNT] = {
+    static const char* lookup_table[CJ_TOKEN_COUNT] = {
         stringify(CJ_TOKEN_ILLEGAL_TOKEN),
         stringify(CJ_TOKEN_EOF),
         stringify(CJ_TOKEN_LEFT_PAREN),
@@ -1387,11 +1382,11 @@
         CJ_Arena* arena;
     } CJ_Lexer;
 
-    internal bool isWhitespace(char c) {
+    static bool isWhitespace(char c) {
         return c == ' ' || c == '\t' || c == '\r' || c == '\n';
     }
 
-    internal CJ_Lexer cj_lexerCreate(CJ_Arena* arena) {
+    static CJ_Lexer cj_lexerCreate(CJ_Arena* arena) {
         CJ_Lexer lexer = {0};
 
         lexer.left_pos  = 0;
@@ -1413,7 +1408,7 @@
         }
     }
 
-    UNUSED_FUNCTION internal void lexerReset(CJ_Lexer* lexer) {
+    UNUSED_FUNCTION static void lexerReset(CJ_Lexer* lexer) {
         lexer->left_pos  = 0;
         lexer->right_pos = 0;
         lexer->line      = 1;
@@ -1422,17 +1417,17 @@
         lexer->source_size = 0;
     }
 
-    internal CJ_StringView getScratchBuffer(CJ_Lexer* lexer) {
+    static CJ_StringView getScratchBuffer(CJ_Lexer* lexer) {
         return cj_strview_create(lexer->source, lexer->left_pos, lexer->right_pos);
     }
 
-    internal CJ_TokenType getAcceptedSyntax(CJ_Lexer* lexer) {
-        internal char syntaxLookup[] = { 
+    static CJ_TokenType getAcceptedSyntax(CJ_Lexer* lexer) {
+        static char syntaxLookup[] = { 
             '(', ')', ',', '-',
             '[', ']', '{', '}', ':'
         };
 
-        internal CJ_TokenType syntaxTokenTable[] = {
+        static CJ_TokenType syntaxTokenTable[] = {
             CJ_TOKEN_LEFT_PAREN, CJ_TOKEN_RIGHT_PAREN,
             CJ_TOKEN_COMMA, CJ_TOKEN_MINUS,
             CJ_TOKEN_LEFT_BRACKET, CJ_TOKEN_RIGHT_BRACKET, 
@@ -1450,12 +1445,12 @@
         return CJ_TOKEN_ILLEGAL_TOKEN;
     }
 
-    internal CJ_TokenType getAcceptedKeyword(CJ_Lexer* lexer) {
-        internal CJ_TokenType keywordTokenTable[] = {
+    static CJ_TokenType getAcceptedKeyword(CJ_Lexer* lexer) {
+        static CJ_TokenType keywordTokenTable[] = {
             CJ_TOKEN_true, CJ_TOKEN_false, CJ_TOKEN_NULL,
         };
 
-        internal char* keywords[] = {
+        static char* keywords[] = {
             "true", "false", "null"
         };
 
@@ -1470,11 +1465,11 @@
         return CJ_TOKEN_ILLEGAL_TOKEN;
     }
 
-    internal bool isEOF(CJ_Lexer* lexer) {
+    static bool isEOF(CJ_Lexer* lexer) {
         return lexer->right_pos >= lexer->source_size;
     }
 
-    internal char peekNthChar(CJ_Lexer* lexer, u8 n) {
+    static char peekNthChar(CJ_Lexer* lexer, u8 n) {
         if ((lexer->right_pos + n) >= lexer->source_size) {
             return '\0';
         }
@@ -1482,17 +1477,17 @@
         return lexer->source[lexer->right_pos + n];
     }
 
-    internal void consumeNextChar(CJ_Lexer* lexer) {
+    static void consumeNextChar(CJ_Lexer* lexer) {
         lexer->c = lexer->source[lexer->right_pos];
         lexer->right_pos += 1;
     }
 
-    internal void addToken(CJ_Lexer* lexer, CJ_TokenType type) {
+    static void addToken(CJ_Lexer* lexer, CJ_TokenType type) {
         char* lexeme = cj_strview_to_cstr(getScratchBuffer(lexer));
         cj_vector_push_arena(lexer->arena, lexer->tokens, cj_tokenCreate(type, lexeme, lexer->line));
     }
 
-    internal bool consumeWhitespace(CJ_Lexer* lexer) {
+    static bool consumeWhitespace(CJ_Lexer* lexer) {
         if (!isWhitespace(lexer->c)) {
             return false;
         }
@@ -1504,14 +1499,14 @@
         return true;
     }
 
-    internal void lexer_reportError(CJ_Lexer* lexer, char* msg) {
+    static void lexer_reportError(CJ_Lexer* lexer, char* msg) {
         char* scratch_buffer = cj_strview_to_cstr(getScratchBuffer(lexer));
         printf("Lexical Error: %s | Line: %d\n", scratch_buffer, (int)lexer->line);
         printf("Msg: %s\n", msg);
         exit(-1);
     }
 
-    internal bool tryConsumeWord(CJ_Lexer* lexer) {
+    static bool tryConsumeWord(CJ_Lexer* lexer) {
         if (!isalpha(lexer->c)) {
         return false;
         }
@@ -1527,7 +1522,7 @@
         return true;
     }
 
-    internal void tryConsumeStringLiteral(CJ_Lexer* lexer) {
+    static void tryConsumeStringLiteral(CJ_Lexer* lexer) {
         while (peekNthChar(lexer, 0) != '\"') {
             if (isEOF(lexer)) {
                 lexer_reportError(lexer, "String literal doesn't have a closing double quote!");
@@ -1541,7 +1536,7 @@
     }
 
 
-    internal void tryConsumeDigitLiteral(CJ_Lexer* lexer) {
+    static void tryConsumeDigitLiteral(CJ_Lexer* lexer) {
         CJ_TokenType kind = CJ_TOKEN_INTEGER_LITERAL;
 
         if (lexer->c == '-') {
@@ -1560,7 +1555,7 @@
     }
 
 
-    internal bool consumeLiteral(CJ_Lexer* lexer) {
+    static bool consumeLiteral(CJ_Lexer* lexer) {
         if (isdigit(lexer->c) || (lexer->c == '-' && isdigit(peekNthChar(lexer, 0)))) {
             tryConsumeDigitLiteral(lexer);
             return true;
@@ -1572,7 +1567,7 @@
         }
     }
 
-    internal bool consumeKeyword(CJ_Lexer* lexer) {
+    static bool consumeKeyword(CJ_Lexer* lexer) {
         if (!tryConsumeWord(lexer)) {
             return false;
         }
@@ -1586,7 +1581,7 @@
         return false;
     }
 
-    internal bool consumeSyntax(CJ_Lexer* lexer) {
+    static bool consumeSyntax(CJ_Lexer* lexer) {
         CJ_TokenType type = getAcceptedSyntax(lexer);
         if (type != CJ_TOKEN_ILLEGAL_TOKEN) {
             addToken(lexer, type);
@@ -1596,7 +1591,7 @@
         return false;
     }
 
-    internal void lexer_consumeNextToken(CJ_Lexer* lexer) {
+    static void lexer_consumeNextToken(CJ_Lexer* lexer) {
         lexer->left_pos = lexer->right_pos;
         consumeNextChar(lexer);
 
@@ -1609,7 +1604,7 @@
         }
     }
 
-    internal CJ_Token* lexerGenerateTokenStream(CJ_Lexer* lexer, char* file_data, u64 file_size) {
+    static CJ_Token* lexerGenerateTokenStream(CJ_Lexer* lexer, char* file_data, u64 file_size) {
         lexer->source = file_data;
         lexer->source_size = file_size;
 
@@ -1644,29 +1639,29 @@
         cj_arena_free(parser->arena_allocator);
     }
 
-    internal void parser_consumeNextToken(CJ_Parser* parser) {
+    static void parser_consumeNextToken(CJ_Parser* parser) {
         parser->tok = parser->tokens[parser->current];
         parser->current += 1;
     }
 
-    internal CJ_Token parser_peekNthToken(CJ_Parser* parser, int n) {
+    static CJ_Token parser_peekNthToken(CJ_Parser* parser, int n) {
         return parser->tokens[parser->current + n];
     }
 
-    internal void parser_reportError(CJ_Parser* parser, char* msg) {
+    static void parser_reportError(CJ_Parser* parser, char* msg) {
         printf("CJ_Parser Error: %s | Line: %d\n", parser_peekNthToken(parser, 0).lexeme, (int)parser_peekNthToken(parser, 0).line);
         printf("Msg: %s\n", msg);
         exit(-1);
     }
 
-    UNUSED_FUNCTION internal void expect(CJ_Parser* parser, CJ_TokenType expected_type) {
+    UNUSED_FUNCTION static void expect(CJ_Parser* parser, CJ_TokenType expected_type) {
         if (parser_peekNthToken(parser, 0).type != expected_type) {
             printf("Expected: %s | Got: %s", cj_tokenTypeToString(expected_type), parser_peekNthToken(parser, 0).lexeme);
             parser_reportError(parser, "\n");
         }
     }
 
-    UNUSED_FUNCTION internal bool parser_consumeOnMatch(CJ_Parser* parser, CJ_TokenType expected_type) {
+    UNUSED_FUNCTION static bool parser_consumeOnMatch(CJ_Parser* parser, CJ_TokenType expected_type) {
         if (parser_peekNthToken(parser, 0).type == expected_type) {
             parser_consumeNextToken(parser);
             return true;
@@ -1675,7 +1670,7 @@
         return false;
     }
 
-    UNUSED_FUNCTION internal CJ_Token previousToken(CJ_Parser* parser) {
+    UNUSED_FUNCTION static CJ_Token previousToken(CJ_Parser* parser) {
         return parser->tokens[parser->current - 1];
     }
 
@@ -1690,7 +1685,7 @@
     // if you have a [] append JSON_Array
     // if you have ""
 
-    internal bool parseJSON(CJ_Parser* parser, CJ_Arena* arena, JSON** ret_state) {
+    static bool parseJSON(CJ_Parser* parser, CJ_Arena* arena, JSON** ret_state) {
         if (parser->current >= (u64)cj_vector_count(parser->tokens)) {
             *ret_state = NULLPTR;
         }
