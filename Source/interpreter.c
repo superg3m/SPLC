@@ -145,6 +145,16 @@ static InterpreterReturn interpret_expression(Expression* expression, Scope* sco
         return ret;
     } else if (expression->type == EXPRESSION_TYPE_GROUPING) {
         return interpret_expression(expression->grouping->value, scope);
+    } else if (expression->type == EXPRESSION_TYPE_UNARY_OPERATION) {
+        InterpreterReturn ret = interpret_expression(expression->unary->operand, scope);
+    
+        if (ret.type == INTERPRETER_INTEGER) {
+            ret.i = -ret.i;
+        } else if (ret.type == INTERPRETER_FLOAT) {
+            ret.f = -ret.f;
+        }
+
+        return ret;
     } else if (expression->type == EXPRESSION_TYPE_BINARY_OPERATION) {
         InterpreterReturn left = interpret_expression(expression->binary->left, scope);
         InterpreterReturn right = interpret_expression(expression->binary->right, scope);
