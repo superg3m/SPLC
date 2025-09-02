@@ -456,6 +456,7 @@ static void interpret_statement(Statement* statement, Scope* scope) {
 
             Scope for_inside_scope = scope_create(&for_init_scope);
             interpret_statements(statement->for_statement->for_code_block, &for_inside_scope);
+            ckg_hashmap_free(for_inside_scope.variables);
             interpret_statement(statement->for_statement->increment, &for_init_scope);
         }
 
